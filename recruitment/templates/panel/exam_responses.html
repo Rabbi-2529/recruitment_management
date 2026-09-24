@@ -1,0 +1,48 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ exam.title }} · Answers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Answer Sheets</h1>
+    <div class="muted">{{ exam.title }} · {{ exam.circular.title }}</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:exam_questions' exam.pk %}">📝 Questions</a>
+    <a class="btn btn-ghost" href="{% url 'panel:exam_list' %}">All exams</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="card stat"><div class="label">Submitted</div><div class="value">{{ attempts|length }}</div></div>
+  <div class="card stat green"><div class="label">Registered candidates</div><div class="value">{{ eligible }}</div></div>
+  <div class="card stat amber"><div class="label">Waiting for marking</div><div class="value">{{ pending_marking }}</div></div>
+  <div class="card stat red"><div class="label">Submitted for leaving the page</div><div class="value">{{ forced }}</div></div>
+</div>
+
+<div class="card dt-card">
+  <table class="datatable display" style="width:100%" data-order-col="2" data-order-dir="desc">
+    <thead>
+      <tr><th>Candidate</th><th>Department</th><th>Submitted</th><th>How</th><th>Auto (MCQ)</th><th>Written</th><th>Total</th><th>%</th><th class="no-sort"></th></tr>
+    </thead>
+    <tbody>
+    {% for a in attempts %}
+      <tr>
+        <td><strong>{{ a.candidate.name }}</strong><div class="muted">{{ a.candidate.phone }}</div></td>
+        <td>{{ a.candidate.department.name }}</td>
+        <td data-order="{{ a.submitted_at|date:'c' }}">{{ a.submitted_at|date:"d M Y" }}<div class="muted">{{ a.submitted_at|date:"h:i A" }}</div></td>
+        <td>
+          {% if a.was_forced %}<span class="badge badge-not_selected">⚠️ {{ a.get_submit_reason_display }}</span>
+          {% elif a.submit_reason == "time_up" %}<span class="badge badge-pending">Time over</span>
+          {% else %}<span class="badge badge-selected">Submitted</span>{% endif %}
+        </td>
+        <td>{{ a.auto_score|floatformat:"-2" }}</td>
+        <td>{% if a.needs_marking %}<span class="badge badge-pending">Needs marking</span>{% else %}{{ a.manual_score|floatformat:"-2"|default:"—" }}{% endif %}</td>
+        <td><strong>{{ a.total_score|floatformat:"-2" }}</strong> <span class="muted">/ {{ a.out_of|floatformat:"-2" }}</span></td>
+        <td>{{ a.percent|floatformat:"-2"|default:"—" }}</td>
+        <td><div class="row-actions"><a class="btn btn-sm" href="{% url 'panel:exam_response' a.pk %}">View &amp; mark</a></div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

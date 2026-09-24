@@ -1,0 +1,428 @@
+{% extends "panel/base.html" %}
+{% block title %}Candidates{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Candidates</h1>
+  <div class="actions">
+    <a class="btn btn-ghost" id="export-link" href="{% url 'panel:candidate_export' %}">⬇️ Export CSV</a>
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_upload' %}{% if filters.circular %}?circular={{ filters.circular }}{% endif %}">⬆️ Upload List</a>
+    <a class="btn" href="{% url 'panel:candidate_add' %}{% if filters.circular %}?circular={{ filters.circular }}{% endif %}">+ Add Candidate</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="filters" id="filters">
+    <select class="input" name="circular" data-searchable aria-label="Circular">
+      <option value="">All circulars</option>
+      {% for c in circulars %}<option value="{{ c.pk }}" {% if filters.circular == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.title }} ({{ c.reference_no }})</option>{% endfor %}
+    </select>
+    <select class="input" name="department" data-searchable aria-label="Department">
+      <option value="">All departments</option>
+      {% for d in departments %}<option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select>
+    <select class="input" name="status" data-searchable aria-label="Status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-ghost" type="button" id="reset-filters">Reset</button>
+  </div>
+
+  <form method="post" action="{% url 'panel:candidate_bulk' %}" class="bulkbar" id="bulk-form">
+    {% csrf_token %}
+    <input type="hidden" name="ids" id="bulk-ids">
+    <input type="hidden" name="next" id="bulk-next" value="{{ request.get_full_path }}">
+    <span class="muted"><strong id="bulk-count">0</strong> selected</span>
+    <select class="input status-select" name="action" required aria-label="Bulk action">
+      <option value="">Bulk action…</option>
+      {% for value, label in bulk_actions %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-sm" type="submit">Apply</button>
+  </form>
+
+  <div class="dt-card">
+    <table id="candidates" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="check-all" aria-label="Select all on this page"></th>
+          <th>Name</th><th>Phone</th><th>Department</th>
+          <th title="Written exam mark, out of 5">Written</th>
+          <th title="Only marks that were taken are counted">Total</th>
+          <th>Status</th><th>Updated</th><th></th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<dialog id="review-dialog" class="modal" aria-labelledby="review-title">
+  <form id="review-form" novalidate>
+    <div class="modal-head">
+      <div>
+        <h2 id="review-title">Review</h2>
+        <div class="muted" id="review-sub"></div>
+      </div>
+      <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label>Rating</label>
+        <div class="stars" role="radiogroup" aria-label="Rating">
+          {% for i in "12345" %}<button type="button" class="star" data-value="{{ i }}" role="radio" aria-label="{{ i }} star{{ i|pluralize }}">★</button>{% endfor %}
+          <button type="button" class="dp-link dp-clear star-clear" data-value="">Clear</button>
+          <span class="star-label muted" id="star-label">Not rated</span>
+        </div>
+        <input type="hidden" name="rating" id="review-rating">
+        <ul class="errors" data-error-for="rating"></ul>
+      </div>
+
+      <div class="grid-2 modal-grid">
+        <div class="field">
+          <label for="review-salary">Expected Salary (BDT)</label>
+          <div class="input-prefix"><span>৳</span><input type="text" class="input" name="expected_salary" id="review-salary" inputmode="numeric" placeholder="e.g. 30,000" autocomplete="off"></div>
+          <ul class="errors" data-error-for="expected_salary"></ul>
+        </div>
+        <div class="field">
+          <label for="review-available">Available Date</label>
+          <input type="text" name="available_date" id="review-available" data-datepicker placeholder="Select date" autocomplete="off">
+          <ul class="errors" data-error-for="available_date"></ul>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="review-note">Note</label>
+        <textarea class="input" name="note" id="review-note" rows="4" placeholder="Interview notes, strengths, concerns…"></textarea>
+        <ul class="errors" data-error-for="note"></ul>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+      <button type="submit" class="btn" id="review-save">Save Review</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="waiting-dialog" class="modal" aria-labelledby="waiting-title">
+  <div class="modal-head">
+    <div>
+      <h2 id="waiting-title">Waiting list</h2>
+      <div class="muted" id="waiting-who"></div>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div class="field">
+      <label for="waiting-reason">Why is this candidate waiting? <span class="muted">(optional)</span></label>
+      <textarea class="input" id="waiting-reason" rows="3" placeholder="e.g. Good fit - waiting for the second position to be approved"></textarea>
+      <div class="help">🔒 Only HR can see this. The candidate only sees the status "Waiting".</div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button type="button" class="btn btn-ghost" data-cancel>Cancel</button>
+    <button type="button" class="btn" data-confirm>Save as Waiting</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+{{ statuses|json_script:"status-choices" }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const STATUSES = JSON.parse(document.getElementById("status-choices").textContent);
+  const CSRF = document.querySelector("#bulk-form [name=csrfmiddlewaretoken]").value;
+  const filters = document.getElementById("filters");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const MARK_FIELDS = ["written_mark"];
+  const totalHtml = (r) => r.total === ""
+    ? '<span class="muted">Not marked</span>'
+    : `<strong>${esc(r.total)}</strong> <span class="muted">/ ${esc(r.out_of)}</span><div class="muted">${esc(r.percent)}%</div>`;
+  const money = (n) => (n === "" || n === null || n === undefined) ? "" : Number(n).toLocaleString("en-IN");
+  const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+  const reviewSummary = (r) => {
+    const parts = [];
+    if (r.status === "waiting" && r.waiting_reason) {
+      parts.push(`<span class="waiting-note" title="Only HR can see this">⏳ ${esc(r.waiting_reason)}</span>`);
+    }
+    if (r.rating) parts.push(`<span class="stars-sm" title="${r.rating} / 5">${stars(r.rating)}</span>`);
+    if (r.expected_salary !== "") parts.push(`৳${money(r.expected_salary)}`);
+    if (r.available_display) parts.push(`Available ${esc(r.available_display)}`);
+    let html = parts.length ? `<div class="review-line">${parts.join(" · ")}</div>` : "";
+    if (r.note) html += `<div class="muted note-line" title="${esc(r.note)}">📝 ${esc(r.note)}</div>`;
+    return html;
+  };
+  const filterValues = () => Object.fromEntries([...filters.querySelectorAll("select")].map((s) => [s.name, s.value]));
+
+  function toast(text, error) {
+    const t = document.getElementById("toast");
+    t.textContent = text;
+    t.className = "toast" + (error ? " error" : "");
+    t.hidden = false;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => (t.hidden = true), 2500);
+  }
+
+  const table = new DataTable("#candidates", {
+    serverSide: true,
+    processing: true,
+    ajax: {
+      url: "{% url 'panel:candidate_data' %}",
+      data: (d) => Object.assign(d, filterValues()),
+    },
+    pageLength: 25,
+    lengthMenu: [10, 25, 50, 100, 500],
+    order: [[7, "desc"]],
+    language: {
+      search: "",
+      searchPlaceholder: "Search name, phone, department…",
+      lengthMenu: "Show _MENU_ rows",
+      info: "Showing _START_–_END_ of _TOTAL_ candidates",
+      infoEmpty: "No candidates",
+      infoFiltered: "(filtered from _MAX_)",
+      zeroRecords: "No matching candidates found",
+      processing: "Loading…",
+    },
+    columns: [
+      { data: "id", orderable: false, className: "col-check",
+        render: (id, t, row) => `<input type="checkbox" class="row-check" value="${id}" aria-label="Select ${esc(row.name)}">` },
+      { data: "name", render: (v, t, row) =>
+          `<strong>${esc(v)}</strong>${row.source === "online" ? '<span class="src-badge" title="Registered online">Online</span>' : ""}` +
+          (row.email ? `<div class="muted">${esc(row.email)}</div>` : "") +
+          reviewSummary(row) },
+      { data: "phone", render: esc },
+      { data: "department", render: (v, t, row) => `${esc(v)}<div class="muted">${esc(row.circular)} · ${esc(row.reference_no)}</div>` },
+      ...MARK_FIELDS.map((f) => ({
+        data: f,
+        render: (v, t, row) =>
+          `<input type="number" class="mark-input" min="0" max="5" step="1" inputmode="numeric" placeholder="–" ` +
+          `value="${esc(v)}" data-field="${f}" data-url="${row.marks_url}" data-last="${esc(v)}" aria-label="${f.replace(/_/g, " ")}">`,
+      })),
+      { data: "total", className: "total-cell", render: (v, t, row) => totalHtml(row) },
+      { data: "status", render: (v, t, row) =>
+          `<select class="input status-select s-${v}" data-url="${row.status_url}" data-current="${v}" aria-label="Status">` +
+          STATUSES.map(([val, label]) => `<option value="${val}"${val === v ? " selected" : ""}>${label}</option>`).join("") +
+          `</select>` },
+      { data: "updated", className: "muted" },
+      { data: null, orderable: false,
+        render: (v, t, row) => `<div class="row-actions">` +
+          `<a class="btn btn-sm btn-ghost" href="${row.interview_url}" title="Interview sheet">🎤</a>` +
+          (row.cv_url ? `<a class="btn btn-sm btn-ghost" href="${row.cv_url}" target="_blank" rel="noopener" title="View CV">📄</a>` : "") +
+          `<button type="button" class="btn btn-sm btn-review">Review</button><a class="btn btn-sm btn-ghost" href="${row.edit_url}">Edit</a><a class="btn btn-sm btn-red" href="${row.delete_url}">Delete</a></div>` },
+    ],
+  });
+
+  // filters
+  $(filters).on("change", "select", () => table.ajax.reload());
+  document.getElementById("reset-filters").addEventListener("click", () => {
+    filters.querySelectorAll("select").forEach((s) => (s.value = ""));
+    $(filters).find("select").trigger("change.select2");
+    table.search("").ajax.reload();
+  });
+
+  // keep export link + bulk "next" in sync with the current view
+  table.on("draw", () => {
+    const params = new URLSearchParams(Object.assign({ q: table.search() }, filterValues()));
+    document.getElementById("export-link").href = "{% url 'panel:candidate_export' %}?" + params;
+    document.getElementById("bulk-next").value = "{% url 'panel:candidate_list' %}?" + new URLSearchParams(filterValues());
+    document.getElementById("check-all").checked = false;
+    syncChecks();
+  });
+
+  // inline status change ("Waiting" asks for a reason that only HR sees)
+  const waitDialog = document.getElementById("waiting-dialog");
+  const waitReason = document.getElementById("waiting-reason");
+  let waitSelect = null;
+
+  async function saveStatus(sel, extra) {
+    const body = new URLSearchParams({ status: sel.value, ...(extra || {}) });
+    try {
+      const res = await fetch(sel.dataset.url, {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF, "X-Requested-With": "XMLHttpRequest" },
+        body,
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Failed");
+      sel.className = `input status-select s-${json.status}`;
+      sel.dataset.current = json.status;
+      toast(json.message);
+      if (extra) table.ajax.reload(null, false); // show the new reason in the row
+    } catch (err) {
+      toast("Could not update status. Please retry.", true);
+      table.ajax.reload(null, false);
+    }
+  }
+
+  waitDialog.querySelector("[data-cancel]").addEventListener("click", () => {
+    if (waitSelect) waitSelect.value = waitSelect.dataset.current; // put the old status back
+    waitDialog.close();
+  });
+  waitDialog.querySelector("[data-confirm]").addEventListener("click", () => {
+    waitDialog.close();
+    if (waitSelect) saveStatus(waitSelect, { waiting_reason: waitReason.value });
+  });
+
+  document.getElementById("candidates").addEventListener("change", async (e) => {
+    const sel = e.target.closest("select.status-select");
+    if (sel) {
+      if (sel.value === "waiting") {
+        const row = table.row(sel.closest("tr")).data();
+        waitSelect = sel;
+        waitReason.value = row.waiting_reason || "";
+        document.getElementById("waiting-who").textContent = row.name;
+        waitDialog.showModal();
+        waitReason.focus();
+      } else {
+        saveStatus(sel);
+      }
+      return;
+    }
+    if (e.target.matches(".mark-input")) { saveMark(e.target); return; }
+    if (e.target.matches(".row-check")) syncChecks();
+  });
+
+  // inline marks: saved on change; empty = not taken (not counted in total)
+  async function saveMark(input) {
+    const value = input.value.trim();
+    if (value === input.dataset.last) return;
+    if (value !== "" && (!/^[0-5]$/.test(value))) {
+      input.classList.add("error");
+      toast("Mark must be a whole number 0, 1, 2, 3, 4 or 5 (leave empty if not taken).", true);
+      return;
+    }
+    input.classList.remove("error", "saved");
+    input.classList.add("saving");
+    try {
+      const res = await fetch(input.dataset.url, {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF, "X-Requested-With": "XMLHttpRequest" },
+        body: new URLSearchParams({ field: input.dataset.field, value }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "Failed");
+      input.value = json.value;
+      input.dataset.last = json.value;
+      input.classList.replace("saving", "saved");
+      setTimeout(() => input.classList.remove("saved"), 1200);
+      input.closest("tr").querySelector(".total-cell").innerHTML = totalHtml(json);
+      toast(json.message);
+    } catch (err) {
+      input.classList.replace("saving", "error");
+      toast(err.message && err.message !== "Failed" ? err.message : "Could not save mark. Please retry.", true);
+    }
+  }
+
+  // ---- review popup: rating, expected salary, available date, note
+  const dialog = document.getElementById("review-dialog");
+  const reviewForm = document.getElementById("review-form");
+  const ratingInput = document.getElementById("review-rating");
+  const salaryInput = document.getElementById("review-salary");
+  const dateInput = reviewForm.querySelector('input[name="available_date"]');
+  const noteInput = document.getElementById("review-note");
+  const STAR_LABELS = ["Not rated", "Poor", "Fair", "Good", "Very good", "Excellent"];
+  let reviewUrl = null;
+
+  function setRating(value) {
+    ratingInput.value = value || "";
+    const n = Number(value) || 0;
+    reviewForm.querySelectorAll(".star").forEach((s) => {
+      const on = Number(s.dataset.value) <= n;
+      s.classList.toggle("on", on);
+      s.setAttribute("aria-checked", String(Number(s.dataset.value) === n));
+    });
+    document.getElementById("star-label").textContent = n ? `${n} / 5 · ${STAR_LABELS[n]}` : STAR_LABELS[0];
+  }
+  reviewForm.querySelectorAll(".star, .star-clear").forEach((b) => b.addEventListener("click", () => setRating(b.dataset.value)));
+
+  salaryInput.addEventListener("input", () => {
+    const digits = salaryInput.value.replace(/\D/g, "").slice(0, 9);
+    salaryInput.value = digits ? Number(digits).toLocaleString("en-IN") : "";
+  });
+
+  function clearErrors() {
+    reviewForm.querySelectorAll("[data-error-for]").forEach((u) => (u.innerHTML = ""));
+  }
+
+  document.getElementById("candidates").addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-review");
+    if (!btn) return;
+    const row = table.row(btn.closest("tr")).data();
+    reviewUrl = row.review_url;
+    clearErrors();
+    document.getElementById("review-title").textContent = `Review · ${row.name}`;
+    document.getElementById("review-sub").textContent = `${row.phone} · ${row.department} · ${row.circular}`;
+    setRating(row.rating);
+    salaryInput.value = row.expected_salary === "" ? "" : money(row.expected_salary);
+    if (dateInput.setDate) dateInput.setDate(row.available_date); else dateInput.value = row.available_date;
+    noteInput.value = row.note || "";
+    dialog.showModal();
+    noteInput.focus();
+  });
+
+  dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => dialog.close()));
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); }); // click outside
+
+  reviewForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearErrors();
+    const save = document.getElementById("review-save");
+    save.disabled = true;
+    const body = new URLSearchParams({
+      rating: ratingInput.value,
+      expected_salary: salaryInput.value.replace(/\D/g, ""),
+      available_date: dateInput.value,
+      note: noteInput.value,
+    });
+    try {
+      const res = await fetch(reviewUrl, {
+        method: "POST",
+        headers: { "X-CSRFToken": CSRF, "X-Requested-With": "XMLHttpRequest" },
+        body,
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        Object.entries(json.errors || {}).forEach(([field, msgs]) => {
+          const ul = reviewForm.querySelector(`[data-error-for="${field}"]`) || reviewForm.querySelector('[data-error-for="note"]');
+          ul.innerHTML = msgs.map((m) => `<li>${esc(m)}</li>`).join("");
+        });
+        return;
+      }
+      dialog.close();
+      toast(json.message);
+      table.ajax.reload(null, false);
+    } catch (err) {
+      toast("Could not save review. Please retry.", true);
+    } finally {
+      save.disabled = false;
+    }
+  });
+
+  // Enter in a mark box jumps to the next mark box
+  document.getElementById("candidates").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !e.target.matches(".mark-input")) return;
+    e.preventDefault();
+    const all = [...document.querySelectorAll("#candidates .mark-input")];
+    const next = all[all.indexOf(e.target) + 1];
+    e.target.blur();
+    if (next) { next.focus(); next.select(); }
+  });
+
+  // bulk selection
+  function syncChecks() {
+    const picked = [...document.querySelectorAll(".row-check:checked")].map((c) => c.value);
+    document.getElementById("bulk-ids").value = picked.join(",");
+    document.getElementById("bulk-count").textContent = picked.length;
+  }
+  document.getElementById("check-all").addEventListener("change", (e) => {
+    document.querySelectorAll(".row-check").forEach((c) => (c.checked = e.target.checked));
+    syncChecks();
+  });
+  document.getElementById("bulk-form").addEventListener("submit", (e) => {
+    const action = e.target.elements["action"].value;
+    if (!document.getElementById("bulk-ids").value) { e.preventDefault(); toast("Select at least one candidate.", true); return; }
+    if (action === "delete" && !confirm("Delete the selected candidates?")) e.preventDefault();
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% if form.non_field_errors %}
+  <ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>
+{% endif %}
+{% for field in form %}
+  {% if field.name == "website" %}
+    <div class="hp-wrap" aria-hidden="true"><label for="{{ field.id_for_label }}">Website</label>{{ field }}</div>
+  {% else %}
+    <div class="field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+      {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+  {% endif %}
+{% endfor %}

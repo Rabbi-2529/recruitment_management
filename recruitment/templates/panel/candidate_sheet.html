@@ -1,0 +1,256 @@
+{% extends "panel/base.html" %}
+{% load static %}
+{% block title %}{{ candidate.name }} · Interview Sheet{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'panel:evaluation_list' %}">Evaluations</a> / Interview Sheet</div>
+    <h1>{{ candidate.name }}</h1>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:interview' %}">🔍 Search candidate</a>
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_edit' candidate.pk %}">✏️ Edit candidate</a>
+  </div>
+</div>
+
+{# ------------------------------------------------------------ candidate header #}
+<section class="card sheet-hero">
+  <div class="sheet-hero__main">
+    <div class="sheet-hero__avatar" aria-hidden="true">{{ candidate.name|slice:":1"|upper }}</div>
+    <div>
+      <div class="sheet-hero__name">{{ candidate.name }}
+        {% if candidate.source == "online" %}<span class="src-badge">Online</span>{% endif %}
+      </div>
+      <div class="muted">{{ candidate.phone }}{% if candidate.email %} · {{ candidate.email }}{% endif %}</div>
+    </div>
+    <div class="sheet-hero__status">
+      <div class="muted">Main status</div>
+      <span class="status-pill status-{{ candidate.status }}">{{ candidate.get_status_display }}</span>
+    </div>
+  </div>
+  <dl class="info-grid">
+    <div><dt>Candidate ID</dt><dd>{{ candidate.registration_no }}</dd></div>
+    <div><dt>Department</dt><dd>{{ candidate.department.name }}</dd></div>
+    <div><dt>Position</dt><dd>{{ candidate.circular.title }}</dd></div>
+    <div><dt>Interview date</dt><dd>{{ interview_date|date:"d M Y"|default:"Not set" }}</dd></div>
+    <div><dt>Interviewers</dt><dd>{% for p in expected %}{{ p.display_name }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">None assigned</span>{% endfor %}</dd></div>
+    <div><dt>CV</dt><dd>{% if candidate.cv %}<a href="{% url 'panel:candidate_cv' candidate.pk %}" target="_blank" rel="noopener">📄 View CV</a>{% else %}<span class="muted">Not uploaded</span>{% endif %}</dd></div>
+  </dl>
+</section>
+
+{# ------------------------------------------------------------ key numbers #}
+<div class="kpi-grid">
+  <div class="card kpi">
+    <div class="kpi__label">Interview average</div>
+    <div class="kpi__value">{% if average_total is not None %}{{ average_total|floatformat:"-2" }}<small>/ {{ average_out_of|floatformat:"-2" }}</small>{% else %}—{% endif %}</div>
+    <div class="kpi__foot">{% if average_percent is not None %}{{ average_percent|floatformat:"-2" }}%{% else %}No submitted marks yet{% endif %}</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi__label">Evaluations</div>
+    <div class="kpi__value">{{ interviewer_submitted_count }}<small>/ {{ expected|length }}</small></div>
+    <div class="kpi__foot">interviewers submitted{% if submitted_count != interviewer_submitted_count %} · +Admin{% endif %}</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi__label">Written exam</div>
+    <div class="kpi__value">{% if written %}{{ written.total_score|floatformat:"-2" }}<small>/ {{ written.out_of|floatformat:"-2" }}</small>{% else %}—{% endif %}</div>
+    <div class="kpi__foot">{% if written %}{{ written.percent|floatformat:"-2" }}% · {{ written.result_label }}{% else %}No answer sheet{% endif %}</div>
+  </div>
+  {% if setting.show_combined %}
+    <div class="card kpi kpi--accent">
+      <div class="kpi__label">Final combined</div>
+      <div class="kpi__value">{% if combined is not None %}{{ combined|floatformat:"-2" }}<small>%</small>{% else %}—{% endif %}</div>
+      <div class="kpi__foot">Written {{ setting.written_weight }}% · Interview {{ setting.interview_weight }}%</div>
+    </div>
+  {% endif %}
+</div>
+
+{# ------------------------------------------------------------ graphs (real data) #}
+<section class="chart-grid">
+  <div class="card card-pad chart-card chart-card--wide">
+    <div class="section-head"><h3>Question-wise marks</h3><span class="muted">each question out of 5</span></div>
+    {% if chart.interviewers %}<div class="chart-box"><canvas id="chart-questions"></canvas></div>
+    {% else %}<div class="chart-empty">No submitted marks yet.</div>{% endif %}
+  </div>
+  <div class="card card-pad chart-card">
+    <div class="section-head"><h3>Total by interviewer</h3><span class="muted">%</span></div>
+    {% if chart.interviewers %}<div class="chart-box"><canvas id="chart-interviewers"></canvas></div>
+    {% else %}<div class="chart-empty">No submitted marks yet.</div>{% endif %}
+  </div>
+  <div class="card card-pad chart-card">
+    <div class="section-head"><h3>Performance summary</h3><span class="muted">%</span></div>
+    {% if chart.summary.interview is not None or chart.summary.written is not None %}<div class="chart-box"><canvas id="chart-summary"></canvas></div>
+    {% else %}<div class="chart-empty">No results yet.</div>{% endif %}
+  </div>
+  <div class="card card-pad chart-card">
+    <div class="section-head"><h3>Performance distribution</h3>
+      <span class="muted">{{ candidate.department.name }}{% if chart.distribution.rank %} · rank {{ chart.distribution.rank }} of {{ chart.distribution.of }}{% endif %}</span></div>
+    {% if chart.distribution.of %}<div class="chart-box"><canvas id="chart-distribution"></canvas></div>
+    {% else %}<div class="chart-empty">No candidate in this department has interview marks yet.</div>{% endif %}
+  </div>
+</section>
+{{ chart|json_script:"chart-data" }}
+
+{# ------------------------------------------------------------ all marks #}
+<section class="card sheet-section">
+  <div class="section-head">
+    <h3>Interview questions &amp; marks</h3>
+    <span class="muted">Whole numbers 0 – 5 per question</span>
+  </div>
+  <table id="marks-table" class="display eval-grid" style="width:100%">
+    <thead>
+      <tr>
+        <th>Interviewer</th>
+        {% for name in criteria_names %}<th class="num">{{ name }}</th>{% endfor %}
+        <th class="num">Total</th><th class="num">Max</th><th class="num">%</th><th>Recommendation</th><th>Sheet</th><th class="no-sort"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for evaluation, scores in grid %}
+      <tr class="{% if not evaluation.is_submitted %}row-draft{% endif %}">
+        <td><strong>{{ evaluation.interviewer_name }}</strong>{% if evaluation.interviewer.is_superuser %} <span class="src-badge">Admin</span>{% endif %}<div class="muted">{{ evaluation.updated_at|date:"d M Y, h:i A" }}</div></td>
+        {% for score in scores %}
+          <td class="num" data-order="{{ score.mark|default_if_none:'-1' }}">{% if score and score.mark is not None %}<span class="mark-chip mark-{{ score.mark }}">{{ score.mark }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        {% endfor %}
+        <td class="num"><strong>{{ evaluation.total_mark|floatformat:"-2" }}</strong></td>
+        <td class="num">{{ evaluation.out_of|floatformat:"-2" }}</td>
+        <td class="num">{{ evaluation.percent|floatformat:"-2"|default:"—" }}</td>
+        <td>{{ evaluation.get_recommendation_display|default:"—" }}</td>
+        <td>{% if evaluation.is_submitted %}<span class="badge badge-selected">Submitted</span>{% else %}<span class="badge badge-pending">Draft</span>{% endif %}</td>
+        <td>{% if evaluation.is_submitted and not evaluation.interviewer.is_superuser %}
+          <form method="post">{% csrf_token %}<button class="btn btn-sm btn-ghost" name="unlock" value="{{ evaluation.pk }}" title="Let this interviewer change their marks">🔓 Unlock</button></form>
+        {% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    {% if submitted_count > 1 %}
+      <tfoot><tr><td><strong>Average ({{ submitted_count }})</strong></td>{% for v in grid_averages %}<td class="num">{{ v|default_if_none:"—" }}</td>{% endfor %}
+        <td class="num"><strong>{{ average_total|floatformat:"-2" }}</strong></td><td class="num">{{ average_out_of|floatformat:"-2" }}</td>
+        <td class="num"><strong>{{ average_percent|floatformat:"-2" }}</strong></td><td colspan="3"></td></tr></tfoot>
+    {% endif %}
+  </table>
+  {% if not grid %}<div class="chart-empty">No interviewer has marked this candidate yet.</div>{% endif %}
+</section>
+
+{# ------------------------------------------------------------ comments #}
+{% if evaluations %}
+<section class="comment-grid">
+  {% for evaluation in evaluations %}
+    <article class="card card-pad comment-card">
+      <header>
+        <div><strong>{{ evaluation.interviewer_name }}</strong>{% if evaluation.interviewer.is_superuser %} <span class="src-badge">Admin</span>{% endif %}</div>
+        <div class="comment-card__score">{{ evaluation.total_mark|floatformat:"-2" }}<small>/{{ evaluation.out_of|floatformat:"-2" }}</small></div>
+      </header>
+      {% if evaluation.recommendation %}<div class="rec rec-{{ evaluation.recommendation }}">{{ evaluation.get_recommendation_display }}</div>{% endif %}
+      <dl>
+        <dt>Comments</dt><dd>{{ evaluation.comments|linebreaksbr|default:"—" }}</dd>
+        <dt>Strengths</dt><dd>{{ evaluation.strengths|linebreaksbr|default:"—" }}</dd>
+        <dt>Weaknesses</dt><dd>{{ evaluation.weaknesses|linebreaksbr|default:"—" }}</dd>
+        <dt>Remarks</dt><dd>{{ evaluation.remarks|linebreaksbr|default:"—" }}</dd>
+      </dl>
+    </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="sheet-two-col">
+  {# ------------------------------------------------------------ interview information (HR) #}
+  <form method="post" enctype="multipart/form-data" class="card card-pad sheet-section" novalidate id="interview-info">
+    {% csrf_token %}
+    <div class="section-head"><h3>Interview information</h3><span class="muted">Main status &amp; HR review</span></div>
+    {% if sheet_form.non_field_errors %}<ul class="alerts">{% for e in sheet_form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>{% endif %}
+    <div class="grid-2">
+      <div class="field">
+        <label for="{{ sheet_form.status.id_for_label }}">Main status</label>
+        {{ sheet_form.status }}
+        <div class="help">The one status used everywhere: this page, Evaluations, the interviewer panel and the candidate's result.</div>
+      </div>
+      <div class="field" id="waiting-reason-field">
+        <label for="{{ sheet_form.waiting_reason.id_for_label }}">Waiting reason <span class="muted">(HR only)</span></label>
+        {{ sheet_form.waiting_reason }}
+      </div>
+      {% for field, label in mark_fields %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ label }} mark <span class="muted">/ 5</span></label>
+          {{ field }}
+          {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      {% endfor %}
+      {% with f=sheet_form.rating %}{% include "panel/_field.html" %}{% endwith %}
+      <div class="field">
+        <label for="{{ sheet_form.expected_salary.id_for_label }}">{{ sheet_form.expected_salary.label }}</label>
+        <div class="input-prefix"><span>৳</span>{{ sheet_form.expected_salary }}</div>
+        {% if sheet_form.expected_salary.errors %}<ul class="errors">{% for e in sheet_form.expected_salary.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% with f=sheet_form.available_date %}{% include "panel/_field.html" %}{% endwith %}
+    </div>
+    {% with f=sheet_form.note %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=sheet_form.cv %}{% include "panel/_field.html" %}{% endwith %}
+    <div class="form-actions"><button class="btn" type="submit">💾 Save interview information</button></div>
+  </form>
+
+  {# ------------------------------------------------------------ the Admin's own marks #}
+  <form method="post" class="card card-pad sheet-section eval-form" id="my-evaluation" novalidate>
+    {% csrf_token %}
+    <div class="section-head">
+      <h3>Your marks (Admin)</h3>
+      {% if admin_evaluation.is_submitted %}<span class="badge badge-selected">Submitted</span>
+      {% elif admin_evaluation %}<span class="badge badge-pending">Draft</span>{% else %}<span class="badge">Not started</span>{% endif %}
+    </div>
+    <p class="muted">Your own sheet — separate from every interviewer's marks. Whole numbers 0 – 5.</p>
+    <table class="eval-table">
+      <thead><tr><th>Question</th><th class="num">Max</th><th class="num">Mark</th></tr></thead>
+      <tbody>
+        {% for field, label, max_marks in eval_form.mark_fields %}
+          <tr>
+            <td><label for="{{ field.id_for_label }}">{{ label }}</label></td>
+            <td class="num">{{ max_marks }}</td>
+            <td class="num">{{ field }}{% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong data-eval-max></strong></td><td class="num"><strong data-eval-total>0</strong></td></tr></tfoot>
+    </table>
+    {% with f=eval_form.comments %}{% include "panel/_field.html" %}{% endwith %}
+    <div class="grid-2">
+      {% with f=eval_form.strengths %}{% include "panel/_field.html" %}{% endwith %}
+      {% with f=eval_form.weaknesses %}{% include "panel/_field.html" %}{% endwith %}
+      {% with f=eval_form.recommendation %}{% include "panel/_field.html" %}{% endwith %}
+      {% with f=eval_form.remarks %}{% include "panel/_field.html" %}{% endwith %}
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" type="submit" name="ev-save" value="1">💾 Save draft</button>
+      <button class="btn" type="submit" name="ev-submit" value="1">✅ Submit my marks</button>
+    </div>
+  </form>
+</div>
+
+{# ------------------------------------------------------------ written exam & interview calls #}
+<div class="sheet-two-col">
+  <section class="card card-pad sheet-section">
+    <div class="section-head"><h3>Written exam</h3></div>
+    {% for a in written_attempts %}
+      <div class="list-row">
+        <div><strong>{{ a.exam.title }}</strong><div class="muted">{{ a.total_score|floatformat:"-2" }} / {{ a.out_of|floatformat:"-2" }} · {{ a.percent|floatformat:"-2"|default:"—" }}% · {{ a.result_label }}</div></div>
+        <a class="btn btn-sm btn-ghost" href="{% url 'panel:exam_response' a.pk %}">Answer sheet</a>
+      </div>
+    {% empty %}<p class="muted">No written exam submitted.</p>{% endfor %}
+  </section>
+  <section class="card card-pad sheet-section">
+    <div class="section-head"><h3>Interview calls &amp; details</h3></div>
+    {% for c in calls %}
+      <div class="list-row"><div>📣 <a href="{% url 'panel:interview_call_detail' c.interview_call_id %}">{{ c.interview_call.title }}</a>
+        <div class="muted">SMS {{ c.get_sms_status_display|lower }}{% if c.sms_sent_at %} · {{ c.sms_sent_at|date:"d M Y" }}{% endif %}</div></div></div>
+    {% empty %}<p class="muted">Not in any interview call list.</p>{% endfor %}
+    <dl class="reg-details" style="margin-top:.8rem">
+      <dt>Education</dt><dd>{{ candidate.education|linebreaksbr|default:"—" }}</dd>
+      <dt>Experience</dt><dd>{{ candidate.experience|linebreaksbr|default:"—" }}</dd>
+      <dt>Circular</dt><dd>{{ candidate.circular.title }} ({{ candidate.circular.reference_no }})</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/candidate_sheet.js' %}"></script>
+{% endblock %}

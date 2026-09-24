@@ -1,0 +1,70 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="muted">{{ exam.title }}</div>
+  </div>
+</div>
+
+<form method="post" class="card card-pad form-card" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% for field in form %}
+    {% if field.name == "correct_choice" or "choice_" in field.name %}{% else %}
+      {% if field.widget_type == 'checkbox' %}
+        <div class="field">
+          <div class="field-check">{{ field }}<label for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+          {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      {% else %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="field" id="mcq-options">
+    <label>Options <span class="muted">— pick the correct one</span></label>
+    {% if form.correct_choice.errors %}<ul class="errors">{% for e in form.correct_choice.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    {% if form.choice_1.errors %}<ul class="errors">{% for e in form.choice_1.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    {% for radio in form.correct_choice %}
+      <div class="option-input">
+        <label class="option-input__radio" title="Correct answer">{{ radio.tag }}</label>
+        {% if radio.choice_label == "1" %}{{ form.choice_1 }}{% elif radio.choice_label == "2" %}{{ form.choice_2 }}
+        {% elif radio.choice_label == "3" %}{{ form.choice_3 }}{% elif radio.choice_label == "4" %}{{ form.choice_4 }}
+        {% elif radio.choice_label == "5" %}{{ form.choice_5 }}{% else %}{{ form.choice_6 }}{% endif %}
+      </div>
+    {% endfor %}
+    <div class="help">Fill at least 2 options. Empty options are ignored.</div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn" type="submit">Save</button>
+    {% if not question %}<button class="btn btn-ghost" type="submit" name="save_add" value="1">Save &amp; add another</button>{% endif %}
+    <a class="btn btn-ghost" href="{{ back_url }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // options are only for multiple choice questions
+  (function () {
+    const kind = document.querySelector("[data-question-kind]");
+    const box = document.getElementById("mcq-options");
+    const toggle = () => (box.hidden = kind.value !== "mcq");
+    kind.addEventListener("change", toggle);
+    toggle();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "panel/base.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    {% if not call %}<div class="muted">Step 1 of 3 — upload the file, choose the department and write the SMS. Next you choose which column is the phone number.</div>{% endif %}
+  </div>
+</div>
+
+{% if not has_gateway %}
+  <div class="alert error">No SMS API is set up yet. You can upload now, but <a href="{% url 'panel:sms_settings' %}">add the API key and Sender ID</a> before sending.</div>
+{% endif %}
+
+{% if not call %}
+<ol class="steps">
+  <li class="is-current">Upload</li><li>Map columns</li><li>Preview &amp; send SMS</li>
+</ol>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="card card-pad form-card form-wide" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+  {% if form.uploaded_file %}
+    <div class="field upload-drop">
+      <label for="{{ form.uploaded_file.id_for_label }}">📁 {{ form.uploaded_file.label }}</label>
+      {{ form.uploaded_file }}
+      <div class="help">{{ form.uploaded_file.help_text }} The people in it are <strong>not</strong> added to your Candidates list.</div>
+      {% if form.uploaded_file.errors %}<ul class="errors">{% for e in form.uploaded_file.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="grid-2">
+    {% with f=form.department %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.title %}{% include "panel/_field.html" %}{% endwith %}
+  </div>
+
+  <h3 class="form-section">SMS</h3>
+  <div class="grid-2">
+    {% with f=form.gateway %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.sender %}{% include "panel/_field.html" %}{% endwith %}
+  </div>
+  {% with f=form.message_template %}{% include "panel/_field.html" %}{% endwith %}
+  {% include "panel/_sms_placeholders.html" %}
+
+  <div class="form-actions">
+    <button class="btn" type="submit">{% if call %}Save{% else %}Upload &amp; continue →{% endif %}</button>
+    <a class="btn btn-ghost" href="{% if call %}{% url 'panel:interview_call_detail' call.pk %}{% else %}{% url 'panel:interview_call_list' %}{% endif %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/interview_call.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Interviewer{% endblock %} | IGL Interviewer</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/logo.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt@2.1.8/css/dataTables.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="panel">
+  <aside class="sidebar sidebar-interviewer">
+    <a class="brand" href="{% url 'interviewer:dashboard' %}"><img src="{% static 'img/logo.svg' %}" alt="">IGL Interviewer</a>
+    <nav>
+      <a href="{% url 'interviewer:dashboard' %}" class="{% if nav == 'dashboard' %}active{% endif %}">📊 Dashboard</a>
+      <a href="{% url 'interviewer:interviews' %}" class="{% if nav == 'interviews' %}active{% endif %}">🎤 My Interviews</a>
+      <a href="{% url 'interviewer:candidates' %}" class="{% if nav == 'candidates' %}active{% endif %}">👥 Candidates</a>
+      <a href="{% url 'interviewer:written_results' %}" class="{% if nav == 'written' %}active{% endif %}">📝 Written Results</a>
+      <a href="{% url 'interviewer:profile' %}" class="{% if nav == 'profile' %}active{% endif %}">👤 Profile</a>
+      <div class="nav-label">My departments</div>
+      <div class="nav-depts">
+        {% for d in departments %}<span class="chip chip-dark">{{ d.name }}</span>{% empty %}<span class="muted">None assigned yet</span>{% endfor %}
+      </div>
+    </nav>
+    <div class="user">
+      Signed in as<br><strong>{{ profile.display_name }}</strong>
+      <form method="post" action="{% url 'interviewer:logout' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-red" type="submit">Log out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="content">
+    {% if messages %}
+      <ul class="alerts">
+        {% for m in messages %}<li class="alert {{ m.tags }}">{{ m }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net@2.1.8/js/dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/panel_forms.js' %}"></script>
+<script>
+  // every list in the interviewer panel is a DataTable: search, sorting, paging, page length
+  document.querySelectorAll("table.datatable").forEach((t) => {
+    const col = t.dataset.orderCol;
+    const dt = new DataTable(t, {
+      pageLength: +(t.dataset.pageLength || 25), lengthMenu: [10, 25, 50, 100],
+      order: col ? [[+col, t.dataset.orderDir || "asc"]] : [],
+      paging: t.dataset.paging !== "false", info: t.dataset.paging !== "false",
+      columnDefs: [{ targets: "no-sort", orderable: false, searchable: false }],
+      language: { search: "", searchPlaceholder: t.dataset.searchPlaceholder || "Search…", lengthMenu: "Show _MENU_",
+                  info: "_START_–_END_ of _TOTAL_", infoFiltered: "(filtered from _MAX_)",
+                  zeroRecords: "Nothing found", emptyTable: t.dataset.empty || "Nothing here yet" },
+    });
+    // dropdown filters above a table: <select data-filter-for="table-id" data-column="3">
+    document.querySelectorAll(`[data-filter-for="${t.id}"]`).forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const v = sel.value;
+        // the cells carry a plain key in data-search (a status code or a department id)
+        dt.column(+sel.dataset.column).search(v ? "^" + v + "$" : "", true, false).draw();
+      });
+    });
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

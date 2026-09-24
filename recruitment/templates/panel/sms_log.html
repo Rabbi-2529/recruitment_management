@@ -1,0 +1,94 @@
+{% extends "panel/base.html" %}
+{% block title %}SMS Log{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>SMS Log</h1>
+    <div class="muted">Every interview-call SMS: who, what, and what the SMS API answered.</div>
+  </div>
+</div>
+
+<div class="stats">
+  <button type="button" class="card stat stat-filter" data-status=""><div class="label">All messages</div><div class="value">{{ stats.total }}</div></button>
+  <button type="button" class="card stat green stat-filter" data-status="success"><div class="label">Success</div><div class="value">{{ stats.success }}</div></button>
+  <button type="button" class="card stat red stat-filter" data-status="failed"><div class="label">Failed</div><div class="value">{{ stats.failed }}</div></button>
+  <button type="button" class="card stat amber stat-filter" data-status="pending"><div class="label">Pending</div><div class="value">{{ stats.pending }}</div></button>
+</div>
+
+<div class="card dt-card">
+  <div class="filters" id="log-filters">
+    <select class="input" name="status" aria-label="Status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}{% if value != "sending" %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+    </select>
+    <select class="input" name="call" data-searchable aria-label="Interview call">
+      <option value="">All interview calls</option>
+      {% for c in calls %}<option value="{{ c.pk }}" {% if filters.call == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-ghost" type="button" id="reset-filters">Reset</button>
+    <a class="btn btn-sm" id="retry-link" href="#" hidden>↻ Retry the failed ones of this interview call</a>
+  </div>
+  <table id="sms-log" class="display" style="width:100%">
+    <thead>
+      <tr><th>Candidate</th><th>Phone</th><th>Sender ID</th><th>Message</th><th>Status</th><th>API Response</th><th>Sent At</th></tr>
+    </thead>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const filters = document.getElementById("log-filters");
+  const statusSelect = filters.querySelector("[name=status]");
+  const callSelect = filters.querySelector("[name=call]");
+  const values = () => ({ status: statusSelect.value, call: callSelect.value });
+
+  const table = new DataTable("#sms-log", {
+    serverSide: true,
+    processing: true,
+    ajax: { url: "{% url 'panel:sms_log_data' %}", data: (d) => Object.assign(d, values()) },
+    pageLength: 25,
+    lengthMenu: [25, 50, 100, 500],
+    order: [[6, "desc"]],
+    language: {
+      search: "", searchPlaceholder: "Search name, phone, message, interview call…",
+      lengthMenu: "Show _MENU_ messages", info: "_START_–_END_ of _TOTAL_ messages",
+      infoFiltered: "(filtered from _MAX_)", zeroRecords: "No SMS found", emptyTable: "No SMS yet", processing: "Loading…",
+    },
+    columns: [
+      { data: "candidate", render: (v, t, r) => `<strong>${esc(v) || "—"}</strong><div class="muted"><a href="${r.call_url}">${esc(r.call)}</a></div>` },
+      { data: "phone", render: esc },
+      { data: "sender_id", render: esc },
+      { data: "message", orderable: false, className: "log-message",
+        render: (v) => `<details><summary>${esc(v.length > 50 ? v.slice(0, 50) + "…" : v)}</summary><div class="sms-bubble sms-bubble-sm">${esc(v).replace(/\n/g, "<br>")}</div><div class="muted">${v.length} characters</div></details>` },
+      { data: "status", render: (v, t, r) => `<span class="badge log-${v}">${esc(r.status_label)}</span>${r.is_retry ? '<div class="muted">retry</div>' : ""}` },
+      { data: "api_response", orderable: false, className: "log-response",
+        render: (v, t, r) => (r.error ? `<div class="errors-inline">${esc(r.error)}</div>` : "") +
+          (v ? `<code>${esc(v)}</code>` : "") + (r.http_status ? `<div class="muted">HTTP ${esc(r.http_status)}</div>` : "") },
+      { data: "sent_at", render: (v) => esc(v) || "—" },
+    ],
+  });
+
+  function syncRetryLink() {
+    const link = document.getElementById("retry-link");
+    link.hidden = !(statusSelect.value === "failed" && callSelect.value);
+    if (!link.hidden) link.href = `{% url 'panel:interview_call_list' %}${callSelect.value}/`;
+  }
+  $(filters).on("change", "select", () => { table.ajax.reload(); syncRetryLink(); });
+  document.getElementById("reset-filters").addEventListener("click", () => {
+    statusSelect.value = ""; callSelect.value = "";
+    $(callSelect).trigger("change.select2");
+    table.search("").ajax.reload();
+    syncRetryLink();
+  });
+  document.querySelectorAll(".stat-filter").forEach((card) => card.addEventListener("click", () => {
+    statusSelect.value = card.dataset.status;
+    table.ajax.reload();
+    syncRetryLink();
+  }));
+  syncRetryLink();
+})();
+</script>
+{% endblock %}

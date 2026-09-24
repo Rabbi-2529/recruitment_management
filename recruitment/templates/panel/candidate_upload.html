@@ -1,0 +1,59 @@
+{% extends "panel/base.html" %}
+{% block title %}Upload Candidate List{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Upload Candidate List</h1>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_template' %}">⬇️ Download template (CSV)</a>
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_add' %}">+ Add one by one</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <form method="post" enctype="multipart/form-data" class="card card-pad" novalidate style="align-self:start">
+    {% csrf_token %}
+    {% include "panel/_fields.html" %}
+    <div class="form-actions"><button class="btn" type="submit">Upload &amp; Import</button></div>
+  </form>
+
+  <div class="card card-pad" style="align-self:start">
+    <h3>File format</h3>
+    <p class="muted">Upload a <code>.csv</code> or <code>.xlsx</code> file. The first row must be the header:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Department</th><th>Status <span class="muted">(optional)</span></th></tr></thead>
+      <tbody>
+        <tr><td>Abdul Karim</td><td>01711000001</td><td>Software Engineering</td><td>Pending</td></tr>
+        <tr><td>Nusrat Jahan</td><td>01811000002</td><td>Accounts</td><td>Selected</td></tr>
+      </tbody>
+    </table></div>
+    <ul class="muted">
+      <li>Status values: <code>Pending</code>, <code>Selected</code>, <code>Not Selected</code>.</li>
+      <li>Optional columns: <code>Email</code>, <code>Written</code> &mdash; the written mark out of 5, leave empty if not taken.
+        Interview marks (Dress Up, Viva ...) are given by each interviewer on their Marking Criteria sheet.</li>
+      <li>Review columns (optional): <code>Rating</code> (1-5), <code>Expected Salary</code>, <code>Available Date</code> (2026-10-01 or 01/10/2026), <code>Note</code>.</li>
+      <li>Phone numbers like <code>+8801711000001</code> or <code>1711000001</code> are normalized automatically.</li>
+      <li>New departments are created automatically and added to the selected circular.</li>
+    </ul>
+  </div>
+</div>
+
+{% if report %}
+  <div class="card card-pad" style="margin-top:1rem">
+    <h3>Import report</h3>
+    <p>
+      <span class="badge badge-selected">{{ report.created }} added</span>
+      <span class="badge badge-pending">{{ report.updated }} updated</span>
+      <span class="badge badge-pending">{{ report.skipped }} skipped</span>
+      <span class="badge badge-not_selected">{{ report.errors|length }} errors</span>
+    </p>
+    {% if report.new_departments %}<p>New departments: {{ report.new_departments|join:", " }}</p>{% endif %}
+    {% if report.errors %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Row</th><th>Problem</th></tr></thead>
+        <tbody>{% for line, msg in report.errors %}<tr><td>{{ line }}</td><td>{{ msg }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    {% endif %}
+    <p><a class="btn btn-sm" href="{% url 'panel:candidate_list' %}?circular={{ form.cleaned_data.circular.pk }}">View candidates</a></p>
+  </div>
+{% endif %}
+{% endblock %}

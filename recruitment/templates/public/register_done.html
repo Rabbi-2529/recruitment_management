@@ -1,0 +1,51 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}Registration Complete{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>Registration Complete</h1>
+</div>
+<div class="result result-selected" role="status">
+  <h2>✅ Thank you, {{ candidate.name }}!</h2>
+  <p>Your registration has been received. Please keep your registration number.</p>
+  <dl class="reg-details">
+    <dt>Registration No.</dt><dd><strong>{{ candidate.registration_no }}</strong></dd>
+    <dt>Circular</dt><dd>{{ candidate.circular.title }}</dd>
+    <dt>Department</dt><dd>{{ candidate.department.name }}</dd>
+    <dt>Phone</dt><dd>{{ candidate.phone }}</dd>
+    {% if candidate.email %}<dt>Email</dt><dd>{{ candidate.email }}</dd>{% endif %}
+    {% if candidate.cv %}<dt>CV</dt><dd>📄 {{ candidate.cv_filename }} <span class="muted">(received)</span></dd>{% endif %}
+  </dl>
+
+  <div class="interview-box">
+    <span class="interview-box__icon" aria-hidden="true">📅</span>
+    <div>
+      <div class="interview-box__label">Interview Date</div>
+      {% if candidate.circular.interview_date %}
+        <div class="interview-box__when">{{ candidate.circular.interview_date|date:"l, d M Y" }}</div>
+        <div class="interview-box__note">Your time slot will be informed by HR.</div>
+      {% else %}
+        <div class="interview-box__when muted">Will be announced soon</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <p>Use your phone number and department on the <a href="{% url 'public:landing' %}">Check Result</a> page to see your interview date and result later.</p>
+  <div class="contact">
+    <a class="btn btn-sm" href="{% url 'public:landing' %}">Check Result</a>
+    <a class="btn btn-sm btn-ghost" href="tel:{{ HR_PHONE }}">📞 {{ HR_PHONE }}</a>
+    <a class="btn btn-sm btn-ghost" href="mailto:{{ HR_EMAIL }}">✉️ {{ HR_EMAIL }}</a>
+  </div>
+</div>
+
+<div class="card card-pad company-links">
+  <h3>For company information visit</h3>
+  <ul>
+    <li><a href="https://www.iglweb.com" target="_blank" rel="noopener">www.iglweb.com</a></li>
+    <li><a href="https://www.felnatech.com" target="_blank" rel="noopener">www.felnatech.com</a></li>
+    <li><a href="https://www.felnadma.com" target="_blank" rel="noopener">www.felnadma.com</a></li>
+    <li><a href="https://www.iglgroup.org" target="_blank" rel="noopener">www.iglgroup.org</a></li>
+  </ul>
+</div>
+{% endblock %}

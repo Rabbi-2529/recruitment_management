@@ -1,0 +1,54 @@
+{% extends "panel/base.html" %}
+{% block title %}SMS Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>SMS Settings</h1>
+    <div class="muted">The API key is stored on the server only — it is never shown in any page or sent to the browser.</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    {% for g in gateways %}
+      <div class="card card-pad" style="margin-bottom:1rem">
+        <div class="exam-link">
+          <div>
+            <h3 style="margin:0">{{ g.name }} {% if g.is_active %}<span class="badge badge-selected">Active</span>{% else %}<span class="badge badge-not_selected">Off</span>{% endif %}</h3>
+            <div class="muted"><code>{{ g.base_url }}</code></div>
+            <div class="muted">API key: <code>{{ g.masked_key }}</code></div>
+          </div>
+          <a class="btn btn-sm btn-ghost" href="{% url 'panel:sms_gateway_edit' g.pk %}">Edit</a>
+        </div>
+        <div class="sender-list">
+          <div class="nav-label" style="padding:.6rem 0 .3rem">Approved Sender IDs</div>
+          {% for s in g.sender_ids.all %}
+            <a class="chip {% if not s.is_active %}chip-off{% endif %}" href="{% url 'panel:sms_sender_edit' s.pk %}" title="Edit">
+              {{ s.sender_id }}{% if s.is_default %} ★{% endif %}
+            </a>
+          {% empty %}
+            <span class="muted">No Sender ID yet — add one on the right.</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="card card-pad empty">No SMS API yet. Add it with your API key.</div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <form method="post" class="card card-pad" novalidate style="margin-bottom:1rem">
+      {% csrf_token %}
+      <h3>Add SMS API</h3>
+      {% for f in gateway_form %}{% include "panel/_field.html" %}{% endfor %}
+      <button class="btn" type="submit" name="add_gateway" value="1">Save SMS API</button>
+    </form>
+    <form method="post" class="card card-pad" novalidate>
+      {% csrf_token %}
+      <h3>Add Approved Sender ID</h3>
+      {% for f in sender_form %}{% include "panel/_field.html" %}{% endfor %}
+      <button class="btn" type="submit" name="add_sender" value="1">Save Sender ID</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

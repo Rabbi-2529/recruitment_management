@@ -1,0 +1,17 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}Exam Closed{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>{{ exam.title }}</h1>
+</div>
+<div class="result result-none" role="status">
+  <h2>This exam is not open</h2>
+  <p>The written exam is closed right now. Please contact HR if you think this is a mistake.</p>
+  <div class="contact">
+    <a class="btn btn-sm btn-ghost" href="tel:{{ HR_PHONE }}">📞 {{ HR_PHONE }}</a>
+    <a class="btn btn-sm btn-ghost" href="mailto:{{ HR_EMAIL }}">✉️ {{ HR_EMAIL }}</a>
+  </div>
+</div>
+{% endblock %}

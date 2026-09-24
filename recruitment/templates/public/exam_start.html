@@ -1,0 +1,81 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}{{ exam.title }}{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>{{ exam.title }}</h1>
+  <p>{{ exam.circular.title }} · Ref: {{ exam.circular.reference_no }}</p>
+  {% include "public/_exam_rules.html" %}
+</div>
+
+{% if error == "not_registered" %}
+  <div class="result result-not_selected" role="status">
+    <h2>Please register first</h2>
+    <p>We could not find this phone number or email in the candidate list for this exam.</p>
+    <p>Register for the interview first, then open this exam link again.</p>
+    <div class="contact">
+      <a class="btn btn-sm" href="{% url 'public:register' %}">Register now</a>
+      <a class="btn btn-sm btn-ghost" href="tel:{{ HR_PHONE }}">📞 {{ HR_PHONE }}</a>
+      <a class="btn btn-sm btn-ghost" href="mailto:{{ HR_EMAIL }}">✉️ {{ HR_EMAIL }}</a>
+    </div>
+  </div>
+{% endif %}
+
+<form method="post" class="card card-pad" novalidate>
+  {% csrf_token %}
+  {% if matches %}
+    <div class="field">
+      <label>You are registered in more than one department. Which one is this exam for?</label>
+      <input type="hidden" name="identity" value="{{ form.identity.value }}">
+      {% for c in matches %}
+        <label class="pick-row">
+          <input type="radio" name="candidate" value="{{ c.pk }}" {% if forloop.first %}checked{% endif %}>
+          <span>{{ c.department.name }} <span class="muted">· {{ c.circular.title }}</span></span>
+        </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-block">Continue</button>
+  {% else %}
+    <div class="exam-meta">
+      <div><span class="muted">Questions</span><strong>{{ exam.questions_per_candidate|default:question_count }}</strong></div>
+      <div><span class="muted">Question set</span><strong>{% if exam.questions_per_candidate %}Random{% else %}{{ exam.total_marks|floatformat:"-2" }} marks{% endif %}</strong></div>
+      <div><span class="muted">Time limit</span><strong>{% if exam.duration_minutes %}{{ exam.duration_minutes }} min{% else %}No limit{% endif %}</strong></div>
+    </div>
+
+    {% if exam.instructions %}<div class="exam-instructions">{{ exam.instructions|linebreaksbr }}</div>{% endif %}
+
+    {% if exam.is_strict %}
+      <div class="strict-banner" role="note">
+        🔒 <strong>Strict exam.</strong> Switching tab, minimising, opening another window or pressing Print Screen
+        submits your exam immediately. Copy and paste are disabled.
+        <button type="button" class="link-button" data-open-rules>Read all rules</button>
+      </div>
+    {% endif %}
+
+    {% if exam.duration_minutes %}
+      <div class="interview-box">
+        <span class="interview-box__icon" aria-hidden="true">⏱️</span>
+        <div>
+          <div class="interview-box__label">Important</div>
+          <div class="interview-box__when">Your {{ exam.duration_minutes }} minutes start as soon as you continue.</div>
+          <div class="interview-box__note">The answer sheet closes itself when the time is over.</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="field">
+      <label for="{{ form.identity.id_for_label }}">{{ form.identity.label }}</label>
+      {{ form.identity }}
+      <div class="help">Use the phone number or email you registered with.</div>
+      {% if form.identity.errors %}<ul class="errors">{% for e in form.identity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-block">Start Exam</button>
+    <p class="form-foot">Not registered yet? <a href="{% url 'public:register' %}">Register for an interview</a></p>
+  {% endif %}
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/exam.js' %}"></script>
+{% endblock %}

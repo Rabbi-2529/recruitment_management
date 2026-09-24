@@ -1,0 +1,7 @@
+<div class="placeholder-bar">
+  <span class="sms-counter" data-sms-counter>0 characters · 0 SMS</span>
+  <span class="muted">Optional — insert each person's own:</span>
+  {% for code, label in placeholders %}
+    <button type="button" class="chip chip-btn" data-insert="{{ code }}" title="{{ label }}">{{ code }}</button>
+  {% endfor %}
+</div>

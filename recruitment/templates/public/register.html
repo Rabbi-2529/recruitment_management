@@ -1,0 +1,49 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}Interview Registration{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>Interview Registration</h1>
+  <p>Choose the circular and department you applied for, then enter your details.</p>
+</div>
+
+{% if has_open_circulars %}
+  <form method="post" class="card card-pad" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% include "public/_form_fields.html" %}
+    <div class="interview-box" id="interview-box" hidden>
+      <span class="interview-box__icon" aria-hidden="true">📅</span>
+      <div><div class="interview-box__label">Interview Date</div><div class="interview-box__when" id="interview-when"></div><div class="interview-box__note">Your time slot will be informed by HR.</div></div>
+    </div>
+    <button type="submit" class="btn btn-block">Register</button>
+    <p class="form-foot">Already registered? <a href="{% url 'public:landing' %}">Check your result</a></p>
+  </form>
+  {{ circular_departments|json_script:"circular-departments" }}
+  {{ circular_interviews|json_script:"circular-interviews" }}
+{% else %}
+  <div class="result result-none" role="status">
+    <h2>Registration is closed</h2>
+    <p>There is no circular open for registration right now. Please check again later.</p>
+    <p>Need help? Call <strong>{{ HR_PHONE }}</strong> or mail <strong>{{ HR_EMAIL }}</strong>.</p>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(function () {
+    const el = document.getElementById("circular-interviews");
+    if (!el) return;
+    const interviews = JSON.parse(el.textContent);
+    const box = document.getElementById("interview-box");
+    function show() {
+      const when = interviews[$("#id_circular").val()] || "";
+      document.getElementById("interview-when").textContent = when;
+      box.hidden = !when;
+    }
+    $("#id_circular").on("change", show);
+    show();
+  });
+</script>
+{% endblock %}

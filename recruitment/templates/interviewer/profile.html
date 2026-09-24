@@ -1,0 +1,29 @@
+{% extends "interviewer/base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Profile</h1></div>
+
+<div class="grid-2">
+  <div class="card card-pad" style="align-self:start">
+    <h3>{{ profile.display_name }}</h3>
+    <dl class="reg-details">
+      <dt>Email</dt><dd>{{ request.user.email }}</dd>
+      <dt>Phone</dt><dd>{{ profile.phone|default:"—" }}</dd>
+      <dt>Designation</dt><dd>{{ profile.designation|default:"—" }}</dd>
+      <dt>Role</dt><dd><span class="badge badge-waiting">Interviewer</span></dd>
+      <dt>Departments</dt><dd>{% for d in departments %}<span class="chip">{{ d.name }}</span>{% empty %}—{% endfor %}</dd>
+      <dt>Written marks</dt><dd>{% if profile.can_edit_written_marks %}Can mark written answers{% else %}View only{% endif %}</dd>
+      <dt>After submitting</dt><dd>{% if profile.can_edit_submitted %}Can still edit my evaluation{% else %}Locked - Admin can unlock{% endif %}</dd>
+    </dl>
+    <p class="muted">Ask the Admin to change your departments or permissions.</p>
+  </div>
+
+  <form method="post" class="card card-pad" novalidate>
+    {% csrf_token %}
+    <h3>Change password</h3>
+    {% if form.non_field_errors %}<ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>{% endif %}
+    {% for f in form %}{% include "panel/_field.html" %}{% endfor %}
+    <button class="btn" type="submit">Change password</button>
+  </form>
+</div>
+{% endblock %}

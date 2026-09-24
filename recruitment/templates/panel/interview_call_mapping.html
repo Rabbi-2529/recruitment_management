@@ -1,0 +1,49 @@
+{% extends "panel/base.html" %}
+{% block title %}Map columns · {{ call.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Map columns</h1>
+    <div class="muted">{{ call.title }} · {{ call.original_filename }} · {{ row_count }} rows</div>
+  </div>
+</div>
+
+<ol class="steps">
+  <li class="is-done">Upload</li><li class="is-current">Map columns</li><li>Preview &amp; send SMS</li>
+</ol>
+
+<div class="grid-2 mapping-grid">
+  <form method="post" class="card card-pad" novalidate>
+    {% csrf_token %}
+    <h3>Which column is which?</h3>
+    <p class="muted">We guessed from the column names. Only the <strong>phone number</strong> is required — one phone is taken per person and repeated numbers are sent only once.</p>
+    {% if form.non_field_errors %}<ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>{% endif %}
+    {% for f in form %}
+      <div class="field mapping-row {% if f.name == 'phone' %}is-key{% endif %}">
+        <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.name == 'phone' %} <span class="req">*</span>{% endif %}</label>
+        {{ f }}
+        {% if f.errors %}<ul class="errors">{% for e in f.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    {% endfor %}
+    <p class="muted">Columns you don't map are kept as extra information for each person.</p>
+    <div class="form-actions">
+      <button class="btn" type="submit">Build the list →</button>
+      <a class="btn btn-ghost" href="{% url 'panel:interview_call_delete' call.pk %}">Cancel upload</a>
+    </div>
+  </form>
+
+  <div class="card card-pad" style="align-self:start; min-width:0">
+    <h3>First rows of the file</h3>
+    <div class="table-wrap sample-table">
+      <table>
+        <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in sample %}
+            <tr>{% for value in row %}<td>{{ value|truncatechars:60|linebreaksbr }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

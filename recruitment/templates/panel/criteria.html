@@ -1,0 +1,49 @@
+{% extends "panel/base.html" %}
+{% block title %}Marking Criteria{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Interview Marking Criteria</h1>
+    <div class="muted">The questions on every interviewer's marking sheet. Every question is marked with a whole number from 0 to 5. Sheets already started keep the questions they were started with.</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card" style="align-self:start">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Criterion</th><th>Marks</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for c in criteria %}
+          <tr class="{% if not c.is_active %}row-invalid{% endif %}">
+            <td>{{ c.order }}</td>
+            <td><strong>{{ c.name }}</strong>{% if c.description %}<div class="muted">{{ c.description }}</div>{% endif %}</td>
+            <td>{{ c.max_marks|floatformat:"-2" }}</td>
+            <td>{% if c.is_active %}<span class="badge badge-selected">In use</span>{% else %}<span class="badge badge-pending">Off</span>{% endif %}</td>
+            <td><a class="btn btn-sm btn-ghost" href="{% url 'panel:criterion_edit' c.pk %}">Edit</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><td></td><td><strong>Total</strong></td><td><strong>{{ total|floatformat:"-2" }}</strong></td><td colspan="2"></td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <form method="post" class="card card-pad" novalidate style="margin-bottom:1rem">
+      {% csrf_token %}
+      <h3>Add criterion</h3>
+      <p class="muted">Marked out of 5 (whole numbers 0 – 5).</p>
+      {% for f in form %}{% include "panel/_field.html" %}{% endfor %}
+      <button class="btn" type="submit" name="add_criterion" value="1">Add</button>
+    </form>
+    <form method="post" class="card card-pad" novalidate>
+      {% csrf_token %}
+      <h3>Final combined result</h3>
+      <p class="muted">Shown to Admin only: written exam % and the average interview % weighted like this.</p>
+      {% for f in settings_form %}{% include "panel/_field.html" %}{% endfor %}
+      <button class="btn" type="submit" name="save_settings" value="1">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

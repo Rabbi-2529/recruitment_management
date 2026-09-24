@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="IGL logo">
+  <path d="M24 75 A80 80 0 0 1 176 75" fill="none" stroke="#dc1f26" stroke-width="16"/>
+  <path d="M23 124 A80 80 0 0 0 177 124" fill="none" stroke="#08a045" stroke-width="16"/>
+  <rect x="63" y="46" width="15" height="112" fill="#3cc46b"/>
+  <rect x="63" y="46" width="78" height="14" fill="#3cc46b"/>
+  <rect x="79" y="95" width="53" height="14" fill="#f02a33"/>
+  <rect x="97" y="95" width="15" height="63" fill="#f02a33"/>
+</svg>

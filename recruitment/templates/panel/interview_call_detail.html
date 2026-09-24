@@ -1,0 +1,119 @@
+{% extends "panel/base.html" %}
+{% load static %}
+{% block title %}{{ call.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ call.title }}</h1>
+    <div class="muted">
+      {{ call.department.name }} · {{ call.original_filename }} · uploaded {{ call.created_at|date:"d M Y, h:i A" }}
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:sms_log' %}?call={{ call.pk }}">✉️ SMS log</a>
+    <a class="btn btn-ghost" href="{% url 'panel:interview_call_mapping' call.pk %}">Columns</a>
+    <a class="btn btn-ghost" href="{% url 'panel:interview_call_edit' call.pk %}">Edit details</a>
+    <a class="btn btn-red" href="{% url 'panel:interview_call_delete' call.pk %}">Delete</a>
+  </div>
+</div>
+
+<ol class="steps">
+  <li class="is-done">Upload</li><li class="is-done">Map columns</li><li class="is-current">Preview &amp; send SMS</li>
+</ol>
+
+
+<div class="stats" id="sms-counts">
+  <div class="card stat"><div class="label">People in the list</div><div class="value" data-count="total">{{ counts.total }}</div><div class="muted">{{ call.duplicate_rows }} duplicate row{{ call.duplicate_rows|pluralize }} removed</div></div>
+  <div class="card stat green"><div class="label">SMS sent</div><div class="value" data-count="sent">{{ counts.sent }}</div></div>
+  <div class="card stat red"><div class="label">Failed</div><div class="value" data-count="failed">{{ counts.failed }}</div></div>
+  <div class="card stat amber"><div class="label">Pending</div><div class="value" data-count="pending">{{ pending_logs }}</div><div class="muted"><span data-count="not_sent">{{ counts.not_sent }}</span> not sent yet</div></div>
+  <div class="card stat"><div class="label">No valid phone</div><div class="value" data-count="invalid">{{ counts.invalid }}</div><div class="muted">never sent</div></div>
+</div>
+
+<div class="grid-2 send-grid">
+  <form class="card card-pad" id="send-form" novalidate
+        data-queue-url="{% url 'panel:interview_call_queue' call.pk %}"
+        data-send-url="{% url 'panel:interview_call_send_batch' call.pk %}"
+        data-preview-url="{% url 'panel:interview_call_preview' call.pk %}"
+        data-pending="{{ pending_logs }}">
+    {% csrf_token %}
+    <h3>SMS</h3>
+    <div class="grid-2">
+      {% with f=send_form.gateway %}{% include "panel/_field.html" %}{% endwith %}
+      {% with f=send_form.sender %}{% include "panel/_field.html" %}{% endwith %}
+    </div>
+    {% with f=send_form.message_template %}{% include "panel/_field.html" %}{% endwith %}
+    {% include "panel/_sms_placeholders.html" %}
+    <ul class="errors" id="send-errors"></ul>
+
+    <div class="send-actions">
+      <button type="button" class="btn" data-send="selected">📤 Send to selected (<span id="selected-count">0</span>)</button>
+      <button type="button" class="btn btn-ghost" data-send="all">Send to everyone not sent yet ({{ counts.not_sent }})</button>
+      <button type="button" class="btn btn-ghost" data-send="retry" {% if not counts.failed %}disabled{% endif %}>↻ Retry failed ({{ counts.failed }})</button>
+    </div>
+    <div class="muted" style="margin-top:.5rem">One SMS per person. People who already received it are never sent again.</div>
+
+    <div class="send-progress" id="send-progress" hidden>
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+      <div id="progress-text" class="muted"></div>
+    </div>
+  </form>
+
+  <div class="card card-pad sms-preview-card" style="align-self:start">
+    <h3>Preview</h3>
+    <div class="muted" id="preview-who">{% if preview_person %}For {{ preview_person.candidate_name|default:preview_person.phone }} — click 👁 in the list to preview another person.{% endif %}</div>
+    <div class="sms-bubble" id="sms-preview">{{ preview|linebreaksbr }}</div>
+    <div class="muted" id="sms-length"></div>
+  </div>
+</div>
+
+<div class="card dt-card" style="margin-top:1rem">
+  <div class="dt-toolbar">
+    <label class="muted" for="status-filter">SMS status</label>
+    <select class="input" id="status-filter" aria-label="Filter by SMS status">
+      <option value="">All</option>
+      {% for value, label in sms_statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+    <span class="muted">Tick the box in the header to select everyone in the current search / filter.</span>
+  </div>
+  <table id="people" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="check-all" aria-label="Select everyone shown"></th>
+        <th>SL</th><th>Candidate Name</th><th>Phone Number</th><th>Email</th><th>Candidate ID</th><th>Status</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in people %}
+      <tr class="{% if not p.is_valid %}row-invalid{% endif %}">
+        <td>{% if p.is_valid and p.sms_status != "sent" %}<input type="checkbox" class="person-check" value="{{ p.pk }}" aria-label="Select {{ p.candidate_name }}">{% endif %}</td>
+        <td data-order="{{ forloop.counter }}">{{ forloop.counter }}</td>
+        <td>
+          <strong>{{ p.candidate_name|default:"—" }}</strong>
+          {% if p.matched_candidate %}<span class="src-badge" title="Also in your Candidates list">Registered</span>{% endif %}
+          {% if p.additional_data %}
+            <details class="extra"><summary>More</summary>
+              <dl>{% for k, v in p.additional_data.items %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+            </details>
+          {% endif %}
+        </td>
+        <td>{% if p.phone %}{{ p.phone }}{% else %}<span class="badge badge-not_selected">{{ p.error }}</span>{% endif %}
+          {% if p.phone_raw and p.phone_raw != p.phone %}<div class="muted" title="As written in the file">{{ p.phone_raw|truncatechars:40 }}</div>{% endif %}</td>
+        <td>{{ p.email|default:"—" }}</td>
+        <td>{{ p.candidate_ref|default:"—" }}</td>
+        <td data-search="{{ p.sms_status }}">
+          <span class="badge sms-{{ p.sms_status }}" data-person-status="{{ p.pk }}">{{ p.get_sms_status_display }}</span>
+          {% if p.sms_sent_at %}<div class="muted">{{ p.sms_sent_at|date:"d M, h:i A" }}</div>{% endif %}
+        </td>
+        <td>{% if p.is_valid %}<button type="button" class="btn btn-sm btn-ghost" data-preview="{{ p.pk }}" title="Preview this person's SMS">👁</button>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/interview_call.js' %}"></script>
+{% endblock %}

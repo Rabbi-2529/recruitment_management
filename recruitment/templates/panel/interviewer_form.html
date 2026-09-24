@@ -1,0 +1,45 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="muted">Role: <strong>Interviewer</strong> — no access to Admin settings, users, SMS or uploads.</div>
+  </div>
+</div>
+
+<form method="post" class="card card-pad form-card form-wide" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<ul class="alerts">{% for e in form.non_field_errors %}<li class="alert error">{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <h3 class="form-section">Account</h3>
+  <div class="grid-2">
+    {% with f=form.first_name %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.last_name %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.email %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.password %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.phone %}{% include "panel/_field.html" %}{% endwith %}
+    {% with f=form.designation %}{% include "panel/_field.html" %}{% endwith %}
+  </div>
+
+  <h3 class="form-section">Assigned Departments</h3>
+  <p class="muted">The interviewer sees and marks candidates of these departments only.</p>
+  <div class="checkbox-grid">
+    {% for box in form.departments %}
+      <label class="check-card">{{ box.tag }}<span>{{ box.choice_label }}</span></label>
+    {% empty %}
+      <span class="muted">No departments yet — add them on the Departments page.</span>
+    {% endfor %}
+  </div>
+  {% if form.departments.errors %}<ul class="errors">{% for e in form.departments.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+
+  <h3 class="form-section">Status &amp; permissions</h3>
+  {% with f=form.is_active %}{% include "panel/_field.html" %}{% endwith %}
+  {% with f=form.can_edit_written_marks %}{% include "panel/_field.html" %}{% endwith %}
+  {% with f=form.can_edit_submitted %}{% include "panel/_field.html" %}{% endwith %}
+
+  <div class="form-actions">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn btn-ghost" href="{% url 'panel:interviewer_list' %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

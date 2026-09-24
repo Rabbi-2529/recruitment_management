@@ -1,0 +1,86 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}{{ exam.title }}{% endblock %}
+{% block content %}
+<div class="exam-page {% if strict %}exam-strict{% endif %}">
+  <div class="hero">
+    <h1>{{ exam.title }}</h1>
+    <p>{{ attempt.candidate.name }} · {{ attempt.candidate.department.name }}</p>
+    {% include "public/_exam_rules.html" %}
+  </div>
+
+  {% if deadline %}
+    <div class="exam-timer" id="exam-timer" data-seconds="{{ seconds_left }}">
+      <span aria-hidden="true">⏱️</span> Time left: <strong id="time-left">--:--</strong>
+      <span class="muted" id="save-state">Answers are saved automatically.</span>
+    </div>
+  {% endif %}
+
+  {% if strict %}
+    <div class="strict-banner" role="note">
+      🔒 Stay on this page. Switching tab, minimising, opening another window or taking a screenshot
+      <strong>submits your exam immediately</strong>.
+    </div>
+  {% endif %}
+
+  <form method="post" class="card card-pad" id="exam-form" novalidate
+        data-save-url="{% url 'public:exam_autosave' exam.token %}"
+        data-leave-url="{% url 'public:exam_leave' exam.token %}"
+        data-done-url="{% url 'public:exam_done' exam.token %}"
+        data-strict="{{ strict|yesno:'1,0' }}">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="alert error">Some questions still need an answer. They are marked in red below.</div>
+    {% endif %}
+
+    {% for question, field in form.question_fields %}
+      <div class="question-card {% if field.errors %}has-error{% endif %}">
+        <div class="question-card__head">
+          <span class="question-card__no">{{ forloop.counter }}</span>
+          <div class="question-card__text">{{ question.text|linebreaksbr }}</div>
+          <span class="badge badge-pending">{{ question.marks|floatformat:"-2" }} mark{{ question.marks|floatformat:"-2"|pluralize }}</span>
+        </div>
+        <div class="question-card__answer">
+          {% if question.is_mcq %}
+            <div class="option-choices">
+              {% for radio in field %}
+                <label class="pick-row">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+              {% endfor %}
+            </div>
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          {% if not question.required %}<div class="help">Optional</div>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+
+    <button type="button" class="btn btn-block" id="submit-exam">Submit Answers</button>
+    <p class="form-foot">You can submit only once.</p>
+  </form>
+</div>
+
+<dialog id="confirm-dialog" class="modal" aria-labelledby="confirm-title">
+  <div class="modal-head"><h2 id="confirm-title">Submit your answers?</h2></div>
+  <div class="modal-body">
+    <p>You cannot change your answers after submitting.</p>
+    <p class="muted" id="unanswered-note"></p>
+  </div>
+  <div class="modal-foot">
+    <button type="button" class="btn btn-ghost" data-cancel>Keep writing</button>
+    <button type="button" class="btn" data-confirm>Yes, submit</button>
+  </div>
+</dialog>
+
+<div class="exam-closed-overlay" id="closed-overlay" hidden>
+  <div class="card card-pad">
+    <h2>Exam submitted</h2>
+    <p id="closed-reason">Your answer sheet has been handed in.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/exam.js' %}"></script>
+{% endblock %}

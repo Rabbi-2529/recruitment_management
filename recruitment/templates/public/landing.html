@@ -1,0 +1,60 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}Interview Result{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>Interview Result</h1>
+  <p>Enter the phone number you applied with and choose your department.</p>
+</div>
+
+<form method="post" class="card card-pad" novalidate>
+  {% csrf_token %}
+  {% include "public/_form_fields.html" %}
+  <button type="submit" class="btn btn-block">Check Result</button>
+  <p class="form-foot">Not registered yet? <a href="{% url 'public:register' %}">Register for an interview</a></p>
+</form>
+
+{% if searched %}
+  {% if results %}
+    {% for c in results %}
+      <div class="result result-{{ c.status }}" role="status">
+        {% if c.status == Status.SELECTED %}
+          <h2>🎉 Congratulations, {{ c.name }}!</h2>
+          <p><strong>You are selected.</strong> Please wait for our next response.</p>
+          <p>For any query, contact <strong>{{ HR_PHONE }}</strong> or mail <strong>{{ HR_EMAIL }}</strong>.</p>
+          <div class="contact">
+            <a class="btn btn-sm" href="tel:{{ HR_PHONE }}">📞 Call {{ HR_PHONE }}</a>
+            <a class="btn btn-sm btn-ghost" href="mailto:{{ HR_EMAIL }}">✉️ {{ HR_EMAIL }}</a>
+          </div>
+        {% elif c.status == Status.WAITING %}
+          <h2>⏳ You are on the waiting list, {{ c.name }}</h2>
+          <p>Your result is <strong>Waiting</strong>. We will contact you if a position becomes available.</p>
+          <p>For any query, contact <strong>{{ HR_PHONE }}</strong> or mail <strong>{{ HR_EMAIL }}</strong>.</p>
+        {% elif c.status == Status.NOT_SELECTED %}
+          <h2>Thank you, {{ c.name }}</h2>
+          <p>We are sorry, you have not been selected this time. We appreciate your interest and wish you the best.</p>
+        {% else %}
+          <h2>Result not published yet</h2>
+          <p>Dear {{ c.name }}, your result is still under review. Please check again later.</p>
+        {% endif %}
+        {% if c.circular.interview_date and c.status == Status.PENDING %}
+          <div class="interview-box">
+            <span class="interview-box__icon" aria-hidden="true">📅</span>
+            <div><div class="interview-box__label">Interview Date</div>
+            <div class="interview-box__when">{{ c.circular.interview_date|date:"l, d M Y" }}</div>
+            <div class="interview-box__note">Your time slot will be informed by HR.</div></div>
+          </div>
+        {% endif %}
+        <p class="meta">{{ c.circular.title }} · Ref: {{ c.circular.reference_no }} · {{ c.department.name }}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="result result-none" role="status">
+      <h2>No record found</h2>
+      <p>We could not find a candidate with this phone number in the selected department. Please check your input.</p>
+      <p>Need help? Call <strong>{{ HR_PHONE }}</strong> or mail <strong>{{ HR_EMAIL }}</strong>.</p>
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

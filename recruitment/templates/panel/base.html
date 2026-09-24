@@ -1,0 +1,78 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin Panel{% endblock %} | IGL HR</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/logo.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-dt@2.1.8/css/dataTables.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="panel">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'panel:dashboard' %}"><img src="{% static 'img/logo.svg' %}" alt="">IGL HR Panel</a>
+    <nav>
+      <div class="nav-label">Overview</div>
+      <a href="{% url 'panel:dashboard' %}" class="{% if active == 'dashboard' %}active{% endif %}">📊 Dashboard</a>
+      <div class="nav-label">Recruitment</div>
+      <a href="{% url 'panel:circular_list' %}" class="{% if active == 'circulars' %}active{% endif %}">📄 Circulars</a>
+      <a href="{% url 'panel:department_list' %}" class="{% if active == 'departments' %}active{% endif %}">🏢 Departments</a>
+      <a href="{% url 'panel:candidate_list' %}" class="{% if active == 'candidates' %}active{% endif %}">👥 Candidates</a>
+      <a href="{% url 'panel:interview' %}" class="{% if active == 'interview' %}active{% endif %}">🎤 Interview</a>
+      <a href="{% url 'panel:exam_list' %}" class="{% if active == 'exams' %}active{% endif %}">📝 Written Exam</a>
+      <a href="{% url 'panel:candidate_upload' %}" class="{% if active == 'upload' %}active{% endif %}">⬆️ Upload List</a>
+      <div class="nav-label">Interview Call</div>
+      <a href="{% url 'panel:interview_call_list' %}" class="{% if active == 'interview_call' %}active{% endif %}">📣 Interview Call</a>
+      <a href="{% url 'panel:sms_log' %}" class="{% if active == 'sms_log' %}active{% endif %}">✉️ SMS Log</a>
+      <a href="{% url 'panel:sms_settings' %}" class="{% if active == 'sms_settings' %}active{% endif %}">📡 SMS Settings</a>
+      <div class="nav-label">Interviewers</div>
+      <a href="{% url 'panel:evaluation_list' %}" class="{% if active == 'evaluations' %}active{% endif %}">📋 Evaluations</a>
+      <a href="{% url 'panel:interviewer_list' %}" class="{% if active == 'interviewers' %}active{% endif %}">🧑‍⚖️ Interviewers</a>
+      <a href="{% url 'panel:criteria' %}" class="{% if active == 'criteria' %}active{% endif %}">⚙️ Marking Criteria</a>
+      <div class="nav-label">Site</div>
+      <a href="{% url 'public:landing' %}" target="_blank" rel="noopener">🌐 View Landing Page</a>
+    </nav>
+    <div class="user">
+      Signed in as<br><strong>{{ request.user.email|default:request.user.username }}</strong>
+      <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-red" type="submit">Log out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="content">
+    {% if messages %}
+      <ul class="alerts">
+        {% for m in messages %}<li class="alert {{ m.tags }}">{{ m }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net@2.1.8/js/dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/panel_forms.js' %}"></script>
+<script src="{% static 'js/datepicker.js' %}"></script>
+<script src="{% static 'js/bd_phone.js' %}"></script>
+<script>
+  // Client-side DataTables for simple lists (circulars, departments)
+  document.querySelectorAll("table.datatable").forEach((t) => {
+    const col = t.dataset.orderCol;
+    new DataTable(t, {
+      pageLength: 10,
+      lengthMenu: [10, 25, 50, 100],
+      order: col ? [[+col, t.dataset.orderDir || "asc"]] : [[0, "asc"]],
+      columnDefs: [{ targets: "no-sort", orderable: false, searchable: false }],
+      language: { search: "", searchPlaceholder: "Search…", lengthMenu: "Show _MENU_ rows", zeroRecords: "Nothing found", emptyTable: "No records yet" },
+    });
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,15 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ title }}</h1></div>
+<form method="post" class="card card-pad form-card" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% include "panel/_fields.html" %}
+  <div class="form-actions">
+    <button class="btn" type="submit">Save</button>
+    {% if save_add %}<button class="btn btn-ghost" type="submit" name="save_add" value="1">Save &amp; add another</button>{% endif %}
+    <a class="btn btn-ghost" href="{{ back_url }}">Cancel</a>
+  </div>
+</form>
+{% if circular_departments %}{{ circular_departments|json_script:"circular-departments" }}{% endif %}
+{% endblock %}

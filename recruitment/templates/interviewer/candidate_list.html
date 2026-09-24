@@ -1,0 +1,13 @@
+{% extends "interviewer/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="muted">{% if nav == "interviews" %}Candidates still to be decided, and everyone you have marked.{% else %}All candidates of your assigned departments.{% endif %}</div>
+  </div>
+</div>
+<div class="card dt-card">
+  {% with table_id="candidates-table" %}{% include "interviewer/_candidate_table.html" %}{% endwith %}
+</div>
+{% endblock %}

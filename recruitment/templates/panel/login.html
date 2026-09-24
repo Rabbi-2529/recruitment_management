@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | IGL HR Panel</title>
+{% include "_head_meta.html" with noindex=True meta_title="IGL HR Panel - Sign in" %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <form method="post" class="card card-pad" novalidate>
+      {% csrf_token %}
+      <div class="hero">
+        <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+        <h1>HR Admin Panel</h1>
+        <p>Sign in with your administrator account.</p>
+      </div>
+      {% if messages %}
+        <ul class="alerts">{% for m in messages %}<li class="alert {{ m.tags }}">{{ m }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% include "panel/_fields.html" %}
+      <button class="btn btn-block" type="submit">Sign in</button>
+    </form>
+  </div>
+</body>
+</html>

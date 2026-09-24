@@ -1,0 +1,47 @@
+{% extends "panel/base.html" %}
+{% block title %}Interviewers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Interviewers</h1>
+    <div class="muted">Interviewers sign in on the same login page and only see candidates of their assigned departments.</div>
+  </div>
+  <div class="actions"><a class="btn" href="{% url 'panel:interviewer_add' %}">+ New Interviewer</a></div>
+</div>
+
+<div class="card">
+  <form method="get" class="filters">
+    <input class="input" type="search" name="q" value="{{ filters.q }}" placeholder="Search name or email">
+    <select class="input" name="department" data-searchable aria-label="Department">
+      <option value="">All departments</option>
+      {% for d in departments %}<option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select>
+    <button class="btn" type="submit">Filter</button>
+    <a class="btn btn-ghost" href="{% url 'panel:interviewer_list' %}">Reset</a>
+  </form>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>User</th><th>Role</th><th>Assigned Departments</th><th>Permissions</th><th>Evaluations</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for p in profiles %}
+        <tr>
+          <td><strong>{{ p.display_name }}</strong><div class="muted">{{ p.user.email }}{% if p.designation %} · {{ p.designation }}{% endif %}</div></td>
+          <td><span class="badge badge-waiting">Interviewer</span></td>
+          <td>{% for d in p.departments.all %}<span class="chip">{{ d.name }}</span>{% empty %}<span class="muted">None — sees no candidates</span>{% endfor %}</td>
+          <td class="muted">
+            {% if p.can_edit_written_marks %}✍️ Marks written answers<br>{% endif %}
+            {% if p.can_edit_submitted %}✏️ Edits after submitting{% endif %}
+            {% if not p.can_edit_written_marks and not p.can_edit_submitted %}Standard{% endif %}
+          </td>
+          <td><a href="{% url 'panel:evaluation_list' %}?interviewer={{ p.user_id }}">{{ p.evaluation_count }}</a></td>
+          <td>{% if p.user.is_active %}<span class="badge badge-selected">Active</span>{% else %}<span class="badge badge-not_selected">Disabled</span>{% endif %}</td>
+          <td><a class="btn btn-sm btn-ghost" href="{% url 'panel:interviewer_edit' p.pk %}">Edit</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty">No interviewers yet. <a href="{% url 'panel:interviewer_add' %}">Add the first interviewer</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

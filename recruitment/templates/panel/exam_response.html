@@ -1,0 +1,92 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ attempt.candidate.name }} · Answer Sheet{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ attempt.candidate.name }}</h1>
+    <div class="muted">{{ attempt.candidate.phone }} · {{ attempt.candidate.department.name }} · {{ attempt.exam.title }}</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:interview_detail' attempt.candidate.pk %}">🎤 Interview sheet</a>
+    <a class="btn btn-ghost" href="{% url 'panel:exam_responses' attempt.exam.pk %}">All answer sheets</a>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="stats">
+    <div class="card stat"><div class="label">Auto marked (MCQ)</div><div class="value">{{ attempt.auto_score|floatformat:"-2" }}</div></div>
+    <div class="card stat amber"><div class="label">Written answers</div><div class="value">{{ attempt.manual_score|floatformat:"-2"|default:"—" }}</div></div>
+    <div class="card stat green"><div class="label">Total</div><div class="value">{{ attempt.total_score|floatformat:"-2" }} <span style="font-size:1rem" class="muted">/ {{ attempt.out_of|floatformat:"-2" }}</span></div><div class="muted">{{ attempt.percent|floatformat:"-2"|default:"—" }}%</div></div>
+    <div class="card stat {% if attempt.was_forced %}red{% endif %}"><div class="label">Submitted</div><div class="value" style="font-size:1.1rem">{{ attempt.submitted_at|date:"d M Y, h:i A" }}</div><div class="muted">{{ attempt.get_submit_reason_display|default:"" }}</div></div>
+  </div>
+
+  {% if attempt.events %}
+    <div class="card card-pad" style="margin-bottom:1rem">
+      <strong>Exam log</strong>
+      <ul class="event-log">
+        <li><span class="muted">{{ attempt.started_at|date:"h:i:s A" }}</span> Started the exam</li>
+        {% for e in attempt.events %}
+          <li class="event-{{ e.event }}"><span class="muted">{{ e.at|slice:"11:19" }}</span>
+            {% if e.event == "submitted" %}Sheet closed ({{ e.reason|default:"" }})
+            {% elif e.event == "tab_switch" %}⚠️ Left the exam page (tab switch / minimised)
+            {% elif e.event == "window_blur" %}⚠️ Opened another window or app
+            {% elif e.event == "screenshot" %}⚠️ Pressed the Print Screen key
+            {% else %}{{ e.event }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="card card-pad" style="margin-bottom:1rem">
+    <div class="exam-link">
+      <div>
+        <strong>Written mark on the interview sheet</strong>
+        <div class="muted">Copies this result to the candidate's Written mark (out of {{ 5 }}). Current: {{ attempt.candidate.written_mark|default:"not set" }}</div>
+      </div>
+      <button class="btn" type="submit" name="apply_mark" value="1">Use as Written mark</button>
+    </div>
+  </div>
+
+  <div class="card">
+    {% for answer in answers %}
+      <div class="question-row">
+        <div class="question-row__no">{{ forloop.counter }}</div>
+        <div class="question-row__body">
+          <div class="question-row__text">{{ answer.question.text|linebreaksbr }}</div>
+          {% if answer.question.is_mcq %}
+            <ol class="option-list">
+              {% for c in answer.question.choices.all %}
+                <li class="{% if c.is_correct %}is-correct{% endif %} {% if answer.choice_id == c.pk %}is-chosen{% endif %}">
+                  {{ c.text }}
+                  {% if answer.choice_id == c.pk %}<span class="badge {% if c.is_correct %}badge-selected{% else %}badge-not_selected{% endif %}">Candidate's answer</span>{% endif %}
+                  {% if c.is_correct %}<span class="badge badge-selected">Correct</span>{% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+            {% if not answer.choice_id %}<div class="muted">Not answered</div>{% endif %}
+          {% else %}
+            <div class="answer-text">{{ answer.text_answer|linebreaksbr|default:"(not answered)" }}</div>
+          {% endif %}
+        </div>
+        <div class="question-row__meta">
+          {% if answer.question.is_mcq %}
+            <div class="badge {% if answer.awarded %}badge-selected{% else %}badge-not_selected{% endif %}">{{ answer.awarded|floatformat:"-2" }} / {{ answer.question.marks|floatformat:"-2" }}</div>
+            <div class="muted">auto</div>
+          {% else %}
+            <label class="muted" for="mark_{{ answer.pk }}">Mark / {{ answer.question.marks|floatformat:"-2" }}</label>
+            <input class="mark-input" type="number" id="mark_{{ answer.pk }}" name="mark_{{ answer.pk }}"
+                   min="0" max="{{ answer.question.marks }}" step="0.25" placeholder="–"
+                   value="{{ answer.awarded|floatformat:'-2'|default_if_none:'' }}">
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="form-actions">
+    <button class="btn" type="submit">Save marks</button>
+    <a class="btn btn-ghost" href="{% url 'panel:exam_responses' attempt.exam.pk %}">Back</a>
+  </div>
+</form>
+{% endblock %}

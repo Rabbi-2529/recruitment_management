@@ -1,0 +1,169 @@
+{% extends "panel/base.html" %}
+{% block title %}Interview{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Interview</h1>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_list' %}">👥 All Candidates</a>
+  </div>
+</div>
+
+<div class="card card-pad">
+  <form method="get" class="interview-search" id="interview-search" novalidate>
+    <div class="field">
+      <label for="{{ form.q.id_for_label }}">{{ form.q.label }}</label>
+      <div class="interview-search__row">
+        {# Select2 suggestion box; the plain input below stays as the no-JavaScript fallback #}
+        <select id="candidate-suggest" class="input" data-url="{% url 'panel:interview_suggest' %}"
+                aria-label="{{ form.q.label }}" hidden><option></option></select>
+        {{ form.q }}
+        <button class="btn" type="submit" id="interview-search-btn">🔍 Search</button>
+      </div>
+      {% if form.q.errors %}<ul class="errors">{% for e in form.q.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <div class="help">Start typing a phone number (01XXXXXXXXX) or email — matching candidates are suggested.</div>
+    </div>
+  </form>
+</div>
+
+{% if searched %}
+  <div class="card interview-results">
+    <div class="card-pad"><h3>{{ matches|length }} match{{ matches|length|pluralize:"es" }}</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Candidate</th><th>Phone / Email</th><th>Department</th><th>Marks</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for c in matches %}
+          <tr>
+            <td><a href="{% url 'panel:interview_detail' c.pk %}"><strong>{{ c.name }}</strong></a>
+              <div class="muted">{{ c.circular.reference_no }}</div></td>
+            <td>{{ c.phone }}{% if c.email %}<div class="muted">{{ c.email }}</div>{% endif %}</td>
+            <td>{{ c.department.name }}</td>
+            <td>{% if c.total_marks is not None %}<strong>{{ c.total_marks|floatformat:"-2" }}</strong> <span class="muted">/ {{ c.marks_out_of }}</span>{% else %}<span class="muted">Not marked</span>{% endif %}</td>
+            <td><span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span></td>
+            <td class="row-actions">
+              {% if c.cv %}<a class="btn btn-sm btn-ghost" href="{% url 'panel:candidate_cv' c.pk %}" target="_blank" rel="noopener">📄 CV</a>{% endif %}
+              <a class="btn btn-sm" href="{% url 'panel:interview_detail' c.pk %}">Open sheet</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty">No candidate found for that phone number or email.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="card interview-results">
+    <div class="card-pad"><h3>Recently updated</h3></div>
+    <div class="dt-card">
+      <table id="recent-candidates" class="display" style="width:100%">
+        <thead>
+          <tr><th>Candidate</th><th>Phone / Email</th><th>Department</th><th>Status</th><th>Updated</th><th></th></tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+  {{ statuses|json_script:"status-choices" }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- Select2 suggestions: type a phone number / email -> pick a candidate -> open their sheet
+(function () {
+  const box = document.getElementById("candidate-suggest");
+  const input = document.getElementById("{{ form.q.id_for_label }}");
+  if (!box || !window.jQuery || !$.fn.select2) return;  // fallback: the plain input stays
+
+  input.hidden = true;
+  input.disabled = true;  // keep it out of the submitted form
+  const button = document.getElementById("interview-search-btn");
+  if (button) button.hidden = true;
+  box.hidden = false;
+
+  const line = (cls, text) => $("<div></div>", { class: cls, text: text });
+  const result = (item) => {
+    if (!item.id) return item.text;  // "Searching…" and friends
+    const meta = [item.name, item.department, item.circular].filter(Boolean).join(" · ");
+    const row = $("<div></div>", { class: "sg-row" }).append(
+      $("<div></div>", { class: "sg-head" }).append(
+        line("sg-phone", item.phone),
+        $("<span></span>", { class: "badge badge-" + item.status_key, text: item.status })
+      ),
+      line("sg-meta", meta)
+    );
+    if (item.email) row.append(line("sg-email", item.email));
+    return row;
+  };
+
+  const $box = $(box).select2({
+    width: "100%",
+    placeholder: "Type a phone number, email or name…",
+    minimumInputLength: 2,
+    ajax: {
+      url: box.dataset.url,
+      dataType: "json",
+      delay: 250,
+      data: (params) => ({ q: params.term }),
+      processResults: (data) => data,
+      cache: true,
+    },
+    language: {
+      inputTooShort: () => "Type at least 2 characters…",
+      searching: () => "Searching…",
+      noResults: () => "No candidate found",
+      errorLoading: () => "Could not load suggestions",
+    },
+    templateResult: result,
+    templateSelection: (item) => item.text || item.placeholder,
+  });
+
+  $box.on("select2:select", (e) => {
+    const picked = e.params.data;
+    if (picked && picked.url) window.location.assign(picked.url);
+  });
+  $box.select2("open");  // the page exists to search, so the box is ready to type in
+})();
+</script>
+
+<script>
+(function () {
+  const table = document.getElementById("recent-candidates");
+  if (!table) return;  // a search is showing its matches instead
+  const STATUSES = Object.fromEntries(JSON.parse(document.getElementById("status-choices").textContent));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  new DataTable(table, {
+    serverSide: true,
+    processing: true,
+    ajax: { url: "{% url 'panel:candidate_data' %}" },
+    pageLength: 10,
+    lengthMenu: [10, 25, 50, 100],
+    order: [[4, "desc"]],
+    language: {
+      search: "",
+      searchPlaceholder: "Search phone, email, name…",
+      lengthMenu: "Show _MENU_ rows",
+      info: "Showing _START_–_END_ of _TOTAL_ candidates",
+      infoEmpty: "No candidates",
+      infoFiltered: "(filtered from _MAX_)",
+      zeroRecords: "No matching candidates found",
+      processing: "Loading…",
+    },
+    columns: [
+      { data: "name", render: (v, t, row) =>
+          `<a href="${row.interview_url}"><strong>${esc(v)}</strong></a>` +
+          `<div class="muted">${esc(row.circular)} · ${esc(row.reference_no)}</div>` },
+      { data: "phone", render: (v, t, row) => esc(v) + (row.email ? `<div class="muted">${esc(row.email)}</div>` : "") },
+      { data: "department", render: esc },
+      { data: "status", render: (v) => `<span class="badge badge-${esc(v)}">${esc(STATUSES[v] || v)}</span>` },
+      { data: "updated", className: "muted" },
+      { data: null, orderable: false, render: (v, t, row) =>
+          `<div class="row-actions">` +
+          (row.cv_url ? `<a class="btn btn-sm btn-ghost" href="${row.cv_url}" target="_blank" rel="noopener">📄 CV</a>` : "") +
+          `<a class="btn btn-sm" href="${row.interview_url}">Open sheet</a></div>` },
+    ],
+  });
+})();
+</script>
+{% endblock %}

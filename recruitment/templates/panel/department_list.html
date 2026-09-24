@@ -1,0 +1,32 @@
+{% extends "panel/base.html" %}
+{% block title %}Departments{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Departments</h1></div>
+
+<div class="grid-2">
+  <div class="card dt-card">
+    <table class="datatable display" style="width:100%">
+      <thead><tr><th>Name</th><th>Candidates</th><th class="no-sort"></th></tr></thead>
+      <tbody>
+      {% for d in departments %}
+        <tr>
+          <td>{{ d.name }}</td>
+          <td><a href="{% url 'panel:candidate_list' %}?department={{ d.pk }}">{{ d.total }}</a></td>
+          <td><div class="row-actions">
+            <a class="btn btn-sm btn-ghost" href="{% url 'panel:department_edit' d.pk %}">Edit</a>
+            <a class="btn btn-sm btn-red" href="{% url 'panel:department_delete' d.pk %}">Delete</a>
+          </div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" class="card card-pad" novalidate style="align-self:start">
+    {% csrf_token %}
+    <h3>Add Department</h3>
+    {% include "panel/_fields.html" %}
+    <button class="btn" type="submit">Add</button>
+  </form>
+</div>
+{% endblock %}

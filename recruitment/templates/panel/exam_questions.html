@@ -1,0 +1,84 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ exam.title }} · Questions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ exam.title }}</h1>
+    <div class="muted">{{ exam.circular.title }} · {{ exam.circular.reference_no }}</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:exam_responses' exam.pk %}">📥 Answers</a>
+    <a class="btn btn-ghost" href="{% url 'panel:exam_edit' exam.pk %}">⚙️ Settings</a>
+    <a class="btn" href="{% url 'panel:question_add' exam.pk %}">+ Add Question</a>
+  </div>
+</div>
+
+<div class="card card-pad exam-link">
+  <div>
+    <div class="nav-label" style="padding:0 0 .25rem">Candidate link</div>
+    <code id="exam-link">{{ exam_url }}</code>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn btn-sm" id="copy-link">📋 Copy</button>
+    <a class="btn btn-sm btn-ghost" href="{{ exam.get_absolute_url }}" target="_blank" rel="noopener">Open</a>
+  </div>
+</div>
+
+<div class="stats" style="margin-top:1rem">
+  <div class="card stat"><div class="label">Questions in the list</div><div class="value">{{ questions|length }}</div></div>
+  <div class="card stat green">
+    <div class="label">Each candidate gets</div>
+    <div class="value">{% if exam.questions_per_candidate %}{{ exam.questions_per_candidate }}{% else %}{{ questions|length }}{% endif %}</div>
+    <div class="muted">{% if exam.questions_per_candidate %}random set{% else %}all questions{% endif %}</div>
+  </div>
+  <div class="card stat"><div class="label">Total marks in the list</div><div class="value">{{ exam.total_marks|floatformat:"-2" }}</div></div>
+  <div class="card stat amber"><div class="label">Time limit</div><div class="value">{% if exam.duration_minutes %}{{ exam.duration_minutes }}<span style="font-size:1rem"> min</span>{% else %}—{% endif %}</div></div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+  {% for q in questions %}
+    <div class="question-row">
+      <div class="question-row__no">{{ forloop.counter }}</div>
+      <div class="question-row__body">
+        <div class="question-row__text">{{ q.text|linebreaksbr }}</div>
+        {% if q.is_mcq %}
+          <ol class="option-list">
+            {% for c in q.choices.all %}
+              <li class="{% if c.is_correct %}is-correct{% endif %}">{{ c.text }}{% if c.is_correct %} <span class="badge badge-selected">Correct</span>{% endif %}</li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <div class="muted">✍️ Written answer — marked by HR</div>
+        {% endif %}
+      </div>
+      <div class="question-row__meta">
+        <span class="badge {% if q.is_mcq %}badge-selected{% else %}badge-pending{% endif %}">{{ q.get_kind_display }}</span>
+        <div class="muted">{{ q.marks|floatformat:"-2" }} mark{{ q.marks|floatformat:"-2"|pluralize }}</div>
+        {% if not q.required %}<div class="muted">Optional</div>{% endif %}
+        <div class="row-actions" style="margin-top:.4rem">
+          <a class="btn btn-sm btn-ghost" href="{% url 'panel:question_edit' exam.pk q.pk %}">Edit</a>
+          <a class="btn btn-sm btn-red" href="{% url 'panel:question_delete' exam.pk q.pk %}">Delete</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="empty">No questions yet. <a href="{% url 'panel:question_add' exam.pk %}">Add the first question</a>.</div>
+  {% endfor %}
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("copy-link").addEventListener("click", async () => {
+    const toast = document.getElementById("toast");
+    const link = document.getElementById("exam-link").textContent.trim();
+    try { await navigator.clipboard.writeText(link); toast.textContent = "Link copied."; }
+    catch (err) { toast.textContent = link; }
+    toast.hidden = false;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => (toast.hidden = true), 3000);
+  });
+</script>
+{% endblock %}

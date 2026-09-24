@@ -1,0 +1,219 @@
+{% extends "interviewer/base.html" %}
+{% block title %}{{ candidate.name }} · Interview Sheet{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'interviewer:interviews' %}">My Interviews</a> / Interview Sheet</div>
+
+{# ---------- candidate header ---------- #}
+<section class="os-hero">
+  <div class="os-hero__top">
+    <div class="os-hero__avatar" aria-hidden="true">{{ candidate.name|slice:":1"|upper }}</div>
+    <div class="os-hero__who">
+      <h1>{{ candidate.name }}</h1>
+      <div class="os-hero__meta">
+        <span>🆔 {{ candidate.registration_no }}</span>
+        <span>📞 {{ candidate.phone }}</span>
+        {% if candidate.email %}<span>✉️ {{ candidate.email }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="os-hero__status">
+      <span class="os-label">Main status</span>
+      <span class="status-pill status-{{ candidate.status }}">{{ candidate.get_status_display }}</span>
+    </div>
+  </div>
+  <div class="os-facts">
+    <div class="os-fact"><span class="os-label">Department</span><strong>{{ candidate.department.name }}</strong></div>
+    <div class="os-fact"><span class="os-label">Position</span><strong>{{ candidate.circular.title }}</strong></div>
+    <div class="os-fact"><span class="os-label">Interview date</span><strong>{{ interview_date|date:"D, d M Y"|default:"Not set" }}</strong></div>
+    <div class="os-fact"><span class="os-label">Written exam</span>
+      <strong>{% if written %}{{ written.percent|floatformat:"-1"|default:"—" }}% · {{ written.result_label }}{% else %}Not taken{% endif %}</strong></div>
+  </div>
+</section>
+
+<div class="os-layout">
+  {# ---------- main column ---------- #}
+  <div class="os-main">
+    <form method="post" id="eval-form" class="eval-form" novalidate>
+      {% csrf_token %}
+
+      {% if not editable %}
+        <div class="os-lock">
+          <span class="os-lock__icon">🔒</span>
+          <div><strong>This sheet is locked.</strong>
+            {% if decision_made %}The Admin has set the main status to <strong>{{ candidate.get_status_display }}</strong>.{% else %}You have already submitted it.{% endif %}
+            Ask the Admin if a change is needed.</div>
+        </div>
+      {% endif %}
+
+      <section class="os-card">
+        <header class="os-card__head">
+          <div>
+            <h2>Interview questions</h2>
+            <p class="muted">Pick a whole-number mark from 0 to 5 for each question.</p>
+          </div>
+          <div class="os-legend" aria-hidden="true">
+            <span><i class="mark-0"></i>0 None</span><span><i class="mark-2"></i>2 Fair</span>
+            <span><i class="mark-3"></i>3 Good</span><span><i class="mark-5"></i>5 Excellent</span>
+          </div>
+        </header>
+
+        <fieldset {% if not editable %}disabled{% endif %}>
+          <ol class="os-questions">
+            {% for field, label, max_marks in form.mark_fields %}
+              <li class="os-q{% if field.errors %} has-error{% endif %}" data-q>
+                <div class="os-q__num">{{ forloop.counter }}</div>
+                <div class="os-q__body">
+                  <label class="os-q__title" for="{{ field.id_for_label }}">{{ label }}</label>
+                  <div class="os-q__hint muted">out of {{ max_marks }}</div>
+                  {% if field.errors %}<div class="os-q__error">{{ field.errors|join:" " }}</div>{% endif %}
+                </div>
+                <div class="os-q__scale mark-scale" role="group" aria-label="{{ label }} mark" data-for="{{ field.id_for_label }}">
+                  {% for n in "012345" %}<button type="button" class="mark-dot" data-value="{{ n }}" aria-pressed="false">{{ n }}</button>{% endfor %}
+                </div>
+                <div class="os-q__input">{{ field }}</div>
+              </li>
+            {% endfor %}
+          </ol>
+        </fieldset>
+      </section>
+
+      <section class="os-card">
+        <header class="os-card__head"><div><h2>Feedback</h2><p class="muted">Only you and the Admin can read this.</p></div></header>
+        <fieldset {% if not editable %}disabled{% endif %}>
+          <div class="grid-2">
+            {% with f=form.strengths %}{% include "panel/_field.html" %}{% endwith %}
+            {% with f=form.weaknesses %}{% include "panel/_field.html" %}{% endwith %}
+          </div>
+          {% with f=form.comments %}{% include "panel/_field.html" %}{% endwith %}
+          <div class="grid-2">
+            {% with f=form.recommendation %}{% include "panel/_field.html" %}{% endwith %}
+            {% with f=form.remarks %}{% include "panel/_field.html" %}{% endwith %}
+          </div>
+        </fieldset>
+      </section>
+    </form>
+
+    <section class="os-card">
+      <header class="os-card__head"><div><h2>Candidate profile</h2></div></header>
+      <dl class="os-profile">
+        <div><dt>Education</dt><dd>{{ candidate.education|linebreaksbr|default:"—" }}</dd></div>
+        <div><dt>Experience</dt><dd>{{ candidate.experience|linebreaksbr|default:"—" }}</dd></div>
+        <div><dt>CV / Resume</dt><dd>{% if candidate.cv %}
+          <a class="btn btn-sm btn-ghost" href="{% url 'interviewer:candidate_cv' candidate.pk %}" target="_blank" rel="noopener">📄 View CV</a>
+          <a class="btn btn-sm btn-ghost" href="{% url 'interviewer:candidate_cv' candidate.pk %}?download=1">⬇ Download</a>
+          {% else %}<span class="muted">No CV uploaded</span>{% endif %}</dd></div>
+      </dl>
+    </section>
+
+    {% if written_attempts %}
+    <section class="os-card dt-card">
+      <header class="os-card__head"><div><h2>Written exam</h2><p class="muted">View only</p></div></header>
+      <table class="datatable display" style="width:100%" data-paging="false">
+        <thead><tr><th>Exam</th><th class="num">Obtained</th><th class="num">%</th><th class="num">Pass</th><th>Result</th><th class="no-sort"></th></tr></thead>
+        <tbody>
+        {% for a in written_attempts %}
+          <tr>
+            <td><strong>{{ a.exam.title }}</strong><div class="muted">{{ a.submitted_at|date:"d M Y" }}</div></td>
+            <td class="num"><strong>{{ a.total_score|floatformat:"-2" }}</strong> / {{ a.out_of|floatformat:"-2" }}</td>
+            <td class="num">{{ a.percent|floatformat:"-2"|default:"—" }}</td>
+            <td class="num">{{ a.exam.pass_percent }}%</td>
+            <td><span class="badge {% if a.result_label == 'Passed' %}badge-selected{% elif a.result_label == 'Failed' %}badge-not_selected{% else %}badge-pending{% endif %}">{{ a.result_label }}</span></td>
+            <td><a class="btn btn-sm btn-ghost" href="{% url 'interviewer:written_sheet' a.pk %}">Answer sheet</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+  </div>
+
+  {# ---------- sticky score summary ---------- #}
+  <aside class="os-side">
+    <div class="os-card os-score">
+      <div class="os-score__head">
+        <span class="os-label">My score</span>
+        {% if evaluation.is_submitted %}<span class="badge badge-selected">Submitted</span>
+        {% elif evaluation %}<span class="badge badge-pending">Draft</span>{% else %}<span class="badge">Not started</span>{% endif %}
+      </div>
+      <div class="os-ring" id="score-ring" style="--p:0">
+        <div class="os-ring__inner">
+          <div class="os-ring__value"><span data-eval-total>0</span><small>/<span data-eval-max>0</span></small></div>
+          <div class="os-ring__pct" data-eval-percent>0%</div>
+        </div>
+      </div>
+      <div class="os-progress">
+        <div class="os-progress__row"><span>Questions marked</span><strong><span data-answered>0</span> / <span data-questions>0</span></strong></div>
+        <div class="os-progress__bar"><span data-progress style="width:0"></span></div>
+      </div>
+      {% if evaluation.is_submitted %}<p class="muted os-small">Submitted {{ evaluation.submitted_at|date:"d M Y, h:i A" }}</p>{% endif %}
+
+      {% if editable %}
+        <div class="os-actions">
+          <button class="btn os-btn-block" type="submit" form="eval-form" name="submit" value="1" id="submit-eval">✅ Submit evaluation</button>
+          <button class="btn btn-ghost os-btn-block" type="submit" form="eval-form" name="save" value="1">💾 Save draft</button>
+        </div>
+        <p class="muted os-small">{% if profile.can_edit_submitted %}You can still edit after submitting until the Admin decides.{% else %}After submitting, only the Admin can unlock your marks.{% endif %}</p>
+      {% endif %}
+    </div>
+    <a class="btn btn-ghost os-btn-block" href="{% url 'interviewer:interviews' %}">← Back to my interviews</a>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const form = document.getElementById("eval-form");
+    const inputs = [...form.querySelectorAll(".eval-mark")];
+    const max = inputs.reduce((s, i) => s + parseInt(i.dataset.max || 0, 10), 0);
+    const $ = (sel) => document.querySelector(sel);
+    $("[data-eval-max]").textContent = max;
+    $("[data-questions]").textContent = inputs.length;
+
+    const sync = () => {
+      let sum = 0, answered = 0;
+      inputs.forEach((i) => {
+        const v = i.value.trim();
+        const ok = /^\d+$/.test(v) && +v <= +i.dataset.max;   // whole numbers only
+        const row = i.closest("[data-q]");
+        row.classList.toggle("is-done", ok);
+        row.classList.toggle("has-error", v !== "" && !ok);
+        if (ok) { sum += +v; answered += 1; }
+        row.querySelectorAll(".mark-dot").forEach((d) => {
+          const on = ok && d.dataset.value === String(+v);
+          d.classList.toggle("on", on);
+          d.className = d.className.replace(/\bmark-\d\b/g, "").trim();
+          if (on) d.classList.add("mark-" + d.dataset.value);
+          d.setAttribute("aria-pressed", on);
+        });
+      });
+      const pct = max ? Math.round((sum / max) * 1000) / 10 : 0;
+      $("[data-eval-total]").textContent = sum;
+      $("[data-eval-percent]").textContent = pct + "%";
+      $("#score-ring").style.setProperty("--p", pct);
+      $("[data-answered]").textContent = answered;
+      $("[data-progress]").style.width = (inputs.length ? (answered / inputs.length) * 100 : 0) + "%";
+    };
+
+    inputs.forEach((i) => {
+      i.addEventListener("input", sync);
+      i.addEventListener("keydown", (e) => { if ([".", ",", "e", "E", "-", "+"].includes(e.key)) e.preventDefault(); });
+    });
+    form.querySelectorAll(".mark-dot").forEach((dot) => dot.addEventListener("click", () => {
+      const input = document.getElementById(dot.closest(".mark-scale").dataset.for);
+      if (input.disabled) return;
+      input.value = input.value === dot.dataset.value ? "" : dot.dataset.value;  // click again to clear
+      sync();
+    }));
+    sync();
+
+    const submit = document.getElementById("submit-eval");
+    if (submit) submit.addEventListener("click", (e) => {
+      const missing = inputs.filter((i) => i.value.trim() === "").length;
+      const msg = missing
+        ? `${missing} question(s) have no mark yet. Submit anyway? (The sheet will ask you to complete them.)`
+        : "Submit your evaluation? After submitting you may not be able to change it.";
+      if (!confirm(msg)) e.preventDefault();
+    });
+  })();
+</script>
+{% endblock %}

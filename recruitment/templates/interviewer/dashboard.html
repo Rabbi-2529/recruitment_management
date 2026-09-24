@@ -1,0 +1,42 @@
+{% extends "interviewer/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Welcome, {{ request.user.first_name|default:profile.display_name }}</h1>
+    <div class="muted">Your departments: {% for d in departments %}{{ d.name }}{% if not forloop.last %}, {% endif %}{% empty %}none yet — ask the Admin to assign you{% endfor %}.</div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <a class="card kpi" href="{% url 'interviewer:candidates' %}"><div class="kpi__label">Candidates in my departments</div><div class="kpi__value">{{ stats.candidates }}</div><div class="kpi__foot">all statuses</div></a>
+  <a class="card kpi kpi--accent" href="{% url 'interviewer:interviews' %}"><div class="kpi__label">Waiting for my marks</div><div class="kpi__value">{{ stats.to_interview }}</div><div class="kpi__foot">main status Pending</div></a>
+  <div class="card kpi"><div class="kpi__label">Submitted by me</div><div class="kpi__value">{{ stats.submitted }}</div><div class="kpi__foot">evaluations</div></div>
+  <div class="card kpi"><div class="kpi__label">My drafts</div><div class="kpi__value">{{ stats.drafts }}</div><div class="kpi__foot">not submitted yet</div></div>
+</div>
+
+<section class="card dt-card sheet-section">
+  <div class="section-head"><h3>To interview</h3><span class="muted">main status Pending, not submitted by you</span></div>
+  {% with candidates=to_interview table_id="todo-table" %}{% include "interviewer/_candidate_table.html" %}{% endwith %}
+</section>
+
+<section class="card dt-card sheet-section">
+  <div class="section-head"><h3>My recent evaluations</h3></div>
+  <table id="recent-table" class="datatable display" style="width:100%" data-page-length="10" data-empty="You have not marked anyone yet.">
+    <thead><tr><th>Candidate</th><th>Department</th><th class="num">Total</th><th class="num">%</th><th>Sheet</th><th>Main status</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for e in recent %}
+      <tr>
+        <td><a class="cand-link" href="{% url 'interviewer:candidate' e.candidate_id %}"><strong>{{ e.candidate.name }}</strong></a></td>
+        <td>{{ e.department.name }}</td>
+        <td class="num">{{ e.total_mark|floatformat:"-2" }} / {{ e.out_of|floatformat:"-2" }}</td>
+        <td class="num">{{ e.percent|floatformat:"-2"|default:"—" }}</td>
+        <td>{% if e.is_submitted %}<span class="badge badge-selected">Submitted</span>{% else %}<span class="badge badge-pending">Draft</span>{% endif %}</td>
+        <td><span class="status-pill status-{{ e.candidate.status }}">{{ e.candidate.get_status_display }}</span></td>
+        <td data-order="{{ e.updated_at|date:'c' }}">{{ e.updated_at|date:"d M Y, h:i A" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

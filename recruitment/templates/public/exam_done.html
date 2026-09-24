@@ -1,0 +1,46 @@
+{% extends "public/base.html" %}
+{% load static %}
+{% block title %}Exam Submitted{% endblock %}
+{% block content %}
+<div class="hero">
+  <img src="{% static 'img/logo.svg' %}" alt="IGL logo">
+  <h1>Answers Submitted</h1>
+</div>
+
+<div class="result result-selected" role="status">
+  <h2>✅ Thank you, {{ attempt.candidate.name }}!</h2>
+  <p>Your answers for <strong>{{ exam.title }}</strong> have been received.</p>
+  <dl class="reg-details">
+    <dt>Registration No.</dt><dd><strong>{{ attempt.candidate.registration_no }}</strong></dd>
+    <dt>Department</dt><dd>{{ attempt.candidate.department.name }}</dd>
+    <dt>Submitted</dt><dd>{{ attempt.submitted_at|date:"d M Y, h:i A" }}</dd>
+    {% if exam.show_score %}
+      <dt>Auto-marked score</dt><dd><strong>{{ attempt.auto_score|floatformat:"-2" }}</strong> / {{ attempt.out_of|floatformat:"-2" }}</dd>
+    {% endif %}
+  </dl>
+  {% if attempt.was_forced %}
+    <div class="alert error">Your exam was submitted automatically: {{ attempt.get_submit_reason_display|lower }}.</div>
+  {% elif attempt.submit_reason == "time_up" %}
+    <div class="alert">The time was over, so your answers were submitted automatically.</div>
+  {% endif %}
+  {% if exam.show_score and attempt.needs_marking %}
+    <p class="muted">Written answers are checked by HR, so your final score can be higher.</p>
+  {% endif %}
+  <p>HR will inform you about the next step. You can check your result any time.</p>
+  <div class="contact">
+    <a class="btn btn-sm" href="{% url 'public:landing' %}">Check Result</a>
+    <a class="btn btn-sm btn-ghost" href="tel:{{ HR_PHONE }}">📞 {{ HR_PHONE }}</a>
+    <a class="btn btn-sm btn-ghost" href="mailto:{{ HR_EMAIL }}">✉️ {{ HR_EMAIL }}</a>
+  </div>
+</div>
+
+<div class="card card-pad company-links">
+  <h3>For company information visit</h3>
+  <ul>
+    <li><a href="https://www.iglweb.com" target="_blank" rel="noopener">www.iglweb.com</a></li>
+    <li><a href="https://www.felnatech.com" target="_blank" rel="noopener">www.felnatech.com</a></li>
+    <li><a href="https://www.felnadma.com" target="_blank" rel="noopener">www.felnadma.com</a></li>
+    <li><a href="https://www.iglgroup.org" target="_blank" rel="noopener">www.iglgroup.org</a></li>
+  </ul>
+</div>
+{% endblock %}

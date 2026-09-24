@@ -1,0 +1,34 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}IGL Careers{% endblock %} | IGL</title>
+{% include "_head_meta.html" %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="public">
+  <header>
+    <a class="brand" href="{% url 'public:landing' %}"><img src="{% static 'img/logo.svg' %}" alt="">IGL Careers</a>
+    <nav class="public-nav">
+      <a href="{% url 'public:landing' %}" class="{% if nav == 'result' %}active{% endif %}">Check Result</a>
+      <a href="{% url 'public:register' %}" class="{% if nav == 'register' %}active{% endif %}">Register</a>
+      {% if nav == 'exam' %}<a href="#" class="active" aria-current="page">Written Exam</a>{% endif %}
+    </nav>
+  </header>
+
+  <main>
+    <div class="search-wrap">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer>&copy; {% now "Y" %} IGL · HR: {{ HR_PHONE }} · {{ HR_EMAIL }}</footer>
+  <script src="{% static 'js/bd_phone.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="{% static 'js/panel_forms.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

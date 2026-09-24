@@ -1,0 +1,57 @@
+{% extends "panel/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:candidate_add' %}">+ Add Candidate</a>
+    <a class="btn" href="{% url 'panel:candidate_upload' %}">⬆️ Upload List</a>
+  </div>
+</div>
+
+<div class="stats">
+  <a class="card stat" href="{% url 'panel:candidate_list' %}"><div class="label">Total Candidates</div><div class="value">{{ stats.total }}</div></a>
+  <a class="card stat green" href="{% url 'panel:candidate_list' %}?status=selected"><div class="label">Selected</div><div class="value">{{ stats.selected }}</div></a>
+  <a class="card stat red" href="{% url 'panel:candidate_list' %}?status=not_selected"><div class="label">Not Selected</div><div class="value">{{ stats.not_selected }}</div></a>
+  <a class="card stat blue" href="{% url 'panel:candidate_list' %}?status=waiting"><div class="label">Waiting</div><div class="value">{{ stats.waiting }}</div></a>
+  <a class="card stat amber" href="{% url 'panel:candidate_list' %}?status=pending"><div class="label">Pending</div><div class="value">{{ stats.pending }}</div></a>
+  <a class="card stat" href="{% url 'panel:circular_list' %}"><div class="label">Circulars / Departments</div><div class="value">{{ circular_count }} / {{ department_count }}</div></a>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-pad"><h3>Circulars</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Circular</th><th>Candidates</th><th>Selected</th></tr></thead>
+      <tbody>
+      {% for c in circulars %}
+        <tr>
+          <td><a href="{% url 'panel:candidate_list' %}?circular={{ c.pk }}">{{ c.title }}</a><div class="muted">{{ c.reference_no }}</div></td>
+          <td>{{ c.total }}</td><td>{{ c.selected }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3" class="empty">No circulars yet. <a href="{% url 'panel:circular_add' %}">Create one</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-pad"><h3>Recently updated</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Candidate</th><th>Department</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for c in recent %}
+        <tr>
+          <td>{{ c.name }}<div class="muted">{{ c.phone }}</div></td>
+          <td>{{ c.department.name }}</td>
+          <td><span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3" class="empty">No candidates yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

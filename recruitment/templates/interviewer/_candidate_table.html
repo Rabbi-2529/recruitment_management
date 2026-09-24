@@ -1,0 +1,43 @@
+{# candidates of my departments - shared by Dashboard / My Interviews / Candidates #}
+<div class="dt-toolbar">
+  <select class="input" data-filter-for="{{ table_id }}" data-column="1" aria-label="Department">
+    <option value="">All my departments</option>
+    {% for d in departments %}<option value="d{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+  </select>
+  <select class="input" data-filter-for="{{ table_id }}" data-column="4" aria-label="Main status">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+  </select>
+  <select class="input" data-filter-for="{{ table_id }}" data-column="5" aria-label="My evaluation">
+    <option value="">My marks: any</option>
+    <option value="todo">Not started</option>
+    <option value="draft">Draft</option>
+    <option value="done">Submitted</option>
+  </select>
+</div>
+<table id="{{ table_id }}" class="datatable display" style="width:100%" data-order-col="0"
+       data-search-placeholder="Search name, phone, email, ID…" data-empty="No candidates here.">
+  <thead>
+    <tr><th>Candidate</th><th>Department</th><th>Position</th><th>Interview date</th><th>Main status</th><th>My evaluation</th><th class="no-sort"></th></tr>
+  </thead>
+  <tbody>
+  {% for c in candidates %}
+    <tr>
+      <td><a class="cand-link" href="{% url 'interviewer:candidate' c.pk %}"><strong>{{ c.name }}</strong></a>
+        <div class="muted">{{ c.registration_no }} · {{ c.phone }}</div></td>
+      <td data-search="d{{ c.department_id }}">{{ c.department.name }}</td>
+      <td>{{ c.circular.title }}</td>
+      <td data-order="{{ c.circular.interview_date|date:'Y-m-d' }}">{{ c.circular.interview_date|date:"d M Y"|default:"—" }}</td>
+      <td data-search="{{ c.status }}"><span class="status-pill status-{{ c.status }}">{{ c.get_status_display }}</span></td>
+      <td data-search="{% if c.my_submitted %}done{% elif c.my_draft %}draft{% else %}todo{% endif %}"
+          data-order="{% if c.my_evaluation %}{{ c.my_evaluation.total_mark }}{% else %}-1{% endif %}">
+        {% if c.my_evaluation %}
+          <strong>{{ c.my_evaluation.total_mark|floatformat:"-2" }}</strong><span class="muted"> / {{ c.my_evaluation.out_of|floatformat:"-2" }}</span>
+          {% if c.my_evaluation.is_submitted %}<span class="badge badge-selected">Submitted</span>{% else %}<span class="badge badge-pending">Draft</span>{% endif %}
+        {% else %}<span class="muted">Not started</span>{% endif %}
+      </td>
+      <td><a class="btn btn-sm" href="{% url 'interviewer:candidate' c.pk %}">{% if c.my_submitted %}View sheet{% elif c.my_draft %}Continue{% else %}Open sheet{% endif %}</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>

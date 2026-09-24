@@ -1,0 +1,35 @@
+{% extends "panel/base.html" %}
+{% block title %}Circulars{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Circulars</h1>
+  <div class="actions"><a class="btn" href="{% url 'panel:circular_add' %}">+ New Circular</a></div>
+</div>
+
+<div class="card dt-card">
+  <table class="datatable display" data-order-col="2" data-order-dir="desc" style="width:100%">
+    <thead><tr><th>Title</th><th>Reference</th><th>Published</th><th>Interview</th><th>Departments</th><th>Visible</th><th>Candidates</th><th>Selected</th><th class="no-sort"></th></tr></thead>
+    <tbody>
+    {% for c in circulars %}
+      <tr>
+        <td><strong>{{ c.title }}</strong></td>
+        <td>{{ c.reference_no }}</td>
+        <td data-order="{{ c.published_on|date:'Y-m-d' }}">{{ c.published_on|date:"d M Y"|default:"—" }}</td>
+        <td data-order="{{ c.interview_date|date:'Y-m-d' }}">{{ c.interview_date|date:"d M Y"|default:"—" }}</td>
+        <td>{% for d in c.departments.all %}<span class="chip">{{ d.name }}</span>{% empty %}<span class="muted">—</span>{% endfor %}</td>
+        <td>{% if c.is_active %}<span class="badge badge-selected">Active</span>{% else %}<span class="badge badge-pending">Hidden</span>{% endif %}
+          {% if c.is_active and c.registration_open %}<span class="badge badge-selected">Registration open</span>{% else %}<span class="badge badge-not_selected">Registration closed</span>{% endif %}</td>
+        <td>{{ c.total }}</td>
+        <td>{{ c.selected }}</td>
+        <td><div class="row-actions">
+          <a class="btn btn-sm btn-ghost" href="{% url 'panel:candidate_list' %}?circular={{ c.pk }}">Candidates</a>
+          <a class="btn btn-sm btn-ghost" href="{% url 'panel:candidate_upload' %}?circular={{ c.pk }}">Upload</a>
+          <a class="btn btn-sm btn-ghost" href="{% url 'panel:circular_edit' c.pk %}">Edit</a>
+          <a class="btn btn-sm btn-red" href="{% url 'panel:circular_delete' c.pk %}">Delete</a>
+        </div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

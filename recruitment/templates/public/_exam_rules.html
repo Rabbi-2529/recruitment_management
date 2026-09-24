@@ -1,0 +1,32 @@
+<button type="button" class="btn btn-sm btn-ghost rules-open" data-open-rules>📋 Exam Rules</button>
+
+<dialog id="rules-dialog" class="modal" aria-labelledby="rules-title">
+  <div class="modal-head">
+    <div>
+      <h2 id="rules-title">Exam Rules</h2>
+      <div class="muted">{{ exam.title }}</div>
+    </div>
+    <button type="button" class="modal-close" data-close-rules aria-label="Close">&times;</button>
+  </div>
+  <div class="modal-body">
+    <ol class="rules-list">
+      {% if exam.duration_minutes %}
+        <li>You have <strong>{{ exam.duration_minutes }} minutes</strong>. The timer starts when you enter your phone number or email and does not stop.</li>
+        <li>When the time is over, your answer sheet is <strong>submitted automatically</strong> with the answers you have given.</li>
+      {% endif %}
+      <li>Your answers are <strong>saved automatically</strong> while you write. If the page reloads, your answers come back.</li>
+      <li>Press <strong>Submit Answers</strong> when you are finished. You can submit only once.</li>
+      {% if exam.is_strict %}
+        <li class="rule-strict">Do <strong>not</strong> switch to another tab, minimise the browser, or open another window or app. <strong>Your exam is submitted immediately</strong> if you do.</li>
+        <li class="rule-strict">Screenshots are not allowed. Pressing <strong>Print Screen</strong> submits your exam.</li>
+        <li class="rule-strict">Copy, paste, right-click and printing are disabled.</li>
+        <li class="rule-strict">Do not refresh or close the page. Stay on this page until you submit.</li>
+      {% endif %}
+      <li>Every candidate gets their own set of questions{% if exam.shuffle_choices %} and options{% endif %} in a different order.</li>
+      <li>Need help? Call {{ HR_PHONE }} or email {{ HR_EMAIL }}.</li>
+    </ol>
+  </div>
+  <div class="modal-foot">
+    <button type="button" class="btn" data-close-rules>I understand</button>
+  </div>
+</dialog>

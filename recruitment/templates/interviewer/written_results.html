@@ -1,0 +1,46 @@
+{% extends "interviewer/base.html" %}
+{% block title %}Written Results{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Written Results</h1>
+    <div class="muted">Written exam results of candidates in your departments{% if not profile.can_edit_written_marks %} (view only){% endif %}.</div>
+  </div>
+</div>
+
+<div class="card dt-card">
+  <div class="dt-toolbar">
+    <select class="input" data-filter-for="written-table" data-column="1" aria-label="Department">
+      <option value="">All my departments</option>
+      {% for d in departments %}<option value="d{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+    </select>
+    <select class="input" data-filter-for="written-table" data-column="6" aria-label="Result">
+      <option value="">All results</option>
+      <option value="Passed">Passed</option><option value="Failed">Failed</option><option value="Marking pending">Marking pending</option>
+    </select>
+    <select class="input" data-filter-for="written-table" data-column="7" aria-label="Main status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <table id="written-table" class="datatable display" style="width:100%" data-order-col="2" data-order-dir="desc"
+         data-search-placeholder="Search candidate, exam…" data-empty="No written exam answers yet.">
+    <thead><tr><th>Candidate</th><th>Department</th><th>Exam</th><th class="num">Marks</th><th class="num">Obtained</th><th class="num">%</th><th>Result</th><th>Main status</th><th class="no-sort"></th></tr></thead>
+    <tbody>
+    {% for a in attempts %}
+      <tr>
+        <td><a class="cand-link" href="{% url 'interviewer:candidate' a.candidate_id %}"><strong>{{ a.candidate.name }}</strong></a><div class="muted">{{ a.candidate.phone }}</div></td>
+        <td data-search="d{{ a.candidate.department_id }}">{{ a.candidate.department.name }}</td>
+        <td data-order="{{ a.submitted_at|date:'c' }}">{{ a.exam.title }}<div class="muted">{{ a.submitted_at|date:"d M Y" }}</div></td>
+        <td class="num">{{ a.out_of|floatformat:"-2" }}</td>
+        <td class="num"><strong>{{ a.total_score|floatformat:"-2" }}</strong></td>
+        <td class="num">{{ a.percent|floatformat:"-2"|default:"—" }}</td>
+        <td data-search="{{ a.result_label }}"><span class="badge {% if a.result_label == 'Passed' %}badge-selected{% elif a.result_label == 'Failed' %}badge-not_selected{% else %}badge-pending{% endif %}">{{ a.result_label }}</span></td>
+        <td data-search="{{ a.candidate.status }}"><span class="status-pill status-{{ a.candidate.status }}">{{ a.candidate.get_status_display }}</span></td>
+        <td><a class="btn btn-sm btn-ghost" href="{% url 'interviewer:written_sheet' a.pk %}">{% if profile.can_edit_written_marks %}View &amp; mark{% else %}View{% endif %}</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

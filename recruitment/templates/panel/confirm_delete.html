@@ -1,0 +1,14 @@
+{% extends "panel/base.html" %}
+{% block title %}Confirm delete{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Confirm delete</h1></div>
+<form method="post" class="card card-pad form-card">
+  {% csrf_token %}
+  <p>Are you sure you want to delete <strong>{{ object }}</strong>?</p>
+  {% if warning %}<p class="alert error">{{ warning }}</p>{% endif %}
+  <div class="form-actions">
+    <button class="btn btn-red" type="submit">Yes, delete</button>
+    <a class="btn btn-ghost" href="{{ back_url }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

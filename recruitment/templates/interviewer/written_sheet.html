@@ -1,0 +1,58 @@
+{% extends "interviewer/base.html" %}
+{% block title %}{{ attempt.candidate.name }} · Written{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ attempt.candidate.name }}</h1>
+    <div class="muted">{{ attempt.exam.title }} · {{ attempt.candidate.department.name }}</div>
+  </div>
+  <div class="actions"><a class="btn btn-ghost" href="{% url 'interviewer:written_results' %}">← Written Results</a></div>
+</div>
+
+<div class="stats">
+  <div class="card stat"><div class="label">Written exam</div><div class="value">{{ attempt.out_of|floatformat:"-2" }}</div><div class="muted">marks</div></div>
+  <div class="card stat green"><div class="label">Obtained</div><div class="value">{{ attempt.total_score|floatformat:"-2" }}</div></div>
+  <div class="card stat"><div class="label">Percentage</div><div class="value">{{ attempt.percent|floatformat:"-2"|default:"—" }}%</div></div>
+  <div class="card stat amber"><div class="label">Status</div><div class="value" style="font-size:1.3rem">{{ attempt.result_label }}</div><div class="muted">pass mark {{ attempt.exam.pass_percent }}%</div></div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    {% for answer in answers %}
+      <div class="question-row">
+        <div class="question-row__no">{{ forloop.counter }}</div>
+        <div class="question-row__body">
+          <div class="question-row__text">{{ answer.question.text|linebreaksbr }}</div>
+          {% if answer.question.is_mcq %}
+            <ol class="option-list">
+              {% for c in answer.question.choices.all %}
+                <li class="{% if c.is_correct %}is-correct{% endif %} {% if answer.choice_id == c.pk %}is-chosen{% endif %}">{{ c.text }}
+                  {% if answer.choice_id == c.pk %}<span class="badge {% if c.is_correct %}badge-selected{% else %}badge-not_selected{% endif %}">Candidate's answer</span>{% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <div class="answer-text">{{ answer.text_answer|linebreaksbr|default:"(not answered)" }}</div>
+          {% endif %}
+        </div>
+        <div class="question-row__meta">
+          {% if answer.question.is_mcq or not can_mark %}
+            <div class="badge">{{ answer.awarded|floatformat:"-2"|default:"–" }} / {{ answer.question.marks|floatformat:"-2" }}</div>
+          {% else %}
+            <label class="muted" for="mark_{{ answer.pk }}">Mark / {{ answer.question.marks|floatformat:"-2" }}</label>
+            <input class="mark-input" type="number" id="mark_{{ answer.pk }}" name="mark_{{ answer.pk }}"
+                   min="0" max="{{ answer.question.marks }}" step="0.25" placeholder="–"
+                   value="{{ answer.awarded|floatformat:'-2'|default_if_none:'' }}">
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% if can_mark %}
+    <div class="form-actions"><button class="btn" type="submit">Save written marks</button></div>
+  {% else %}
+    <p class="muted" style="margin-top:.8rem">🔒 You can view this result. Only the Admin (or an interviewer given permission) can change written marks.</p>
+  {% endif %}
+</form>
+{% endblock %}

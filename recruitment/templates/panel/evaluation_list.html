@@ -1,0 +1,94 @@
+{% extends "panel/base.html" %}
+{% block title %}Evaluations{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Evaluations</h1>
+    <div class="muted">Every candidate's interview marks, written result and main status in one place.</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:interviewer_list' %}">🧑‍⚖️ Interviewers</a>
+    <a class="btn btn-ghost" href="{% url 'panel:criteria' %}">⚙️ Marking criteria</a>
+  </div>
+</div>
+
+<div class="card dt-card">
+  <div class="filters filters-grid" id="eval-filters">
+    <select class="input" name="department" data-searchable aria-label="Department">
+      <option value="">All departments</option>
+      {% for d in departments %}<option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select>
+    <select class="input" name="status" aria-label="Main status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select class="input" name="interviewer" data-searchable aria-label="Interviewer">
+      <option value="">All interviewers</option>
+      {% for p in interviewers %}<option value="{{ p.user_id }}" {% if filters.interviewer == p.user_id|stringformat:"s" %}selected{% endif %}>{{ p.display_name }}</option>{% endfor %}
+    </select>
+    <input class="input" type="text" name="date" value="{{ filters.date }}" data-datepicker placeholder="Interview date" autocomplete="off">
+    <select class="input" name="evaluated" aria-label="Evaluated">
+      <option value="">Marked or not</option>
+      <option value="yes">Has submitted marks</option>
+      <option value="no">No marks yet</option>
+    </select>
+    <button class="btn btn-ghost" type="button" id="reset-filters">Reset</button>
+  </div>
+  <table id="evaluations" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th>Candidate</th><th>Department</th><th>Interview date</th><th>Interviewers</th>
+        <th class="num">Sheets</th><th class="num">Interview</th><th>Written</th>
+        {% if setting.show_combined %}<th class="num">Final</th>{% endif %}
+        <th>Main status</th><th></th>
+      </tr>
+    </thead>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const filters = document.getElementById("eval-filters");
+  const values = () => Object.fromEntries([...filters.querySelectorAll("select, input")].map((el) => [el.name, el.value]));
+  const pct = (v) => (v === "" ? '<span class="muted">—</span>' : `<strong>${esc(v)}%</strong>`);
+  const columns = [
+    { data: "name", render: (v, t, r) => `<a href="${r.url}" class="cand-link"><strong>${esc(v)}</strong></a><div class="muted">${esc(r.registration_no)} · ${esc(r.phone)}</div>` },
+    { data: "department", render: (v, t, r) => `${esc(v)}<div class="muted">${esc(r.position)}</div>` },
+    { data: "interview_date", render: (v) => esc(v) || '<span class="muted">—</span>' },
+    { data: "interviewers", orderable: false, render: (list) => list.length
+        ? list.map((p) => `<span class="chip ${p.submitted ? "" : "chip-off"}" title="${p.submitted ? "Submitted" : "Draft"}">${esc(p.name)}${p.admin ? " (Admin)" : ""} · ${esc(p.total)}/${esc(p.out_of)}</span>`).join(" ")
+        : '<span class="muted">Not marked</span>' },
+    { data: "evaluations", className: "num", render: (v, t, r) => `${v}${r.drafts ? `<div class="muted">+${r.drafts} draft</div>` : ""}` },
+    { data: "interview", className: "num", render: pct },
+    { data: "written", orderable: false, render: (v, t, r) => v ? `${esc(v)}<div class="muted">${esc(r.written_label)}</div>` : '<span class="muted">—</span>' },
+    {% if setting.show_combined %}{ data: "combined", className: "num", orderable: false, render: pct },{% endif %}
+    { data: "status", render: (v, t, r) => `<span class="status-pill status-${esc(v)}">${esc(r.status_label)}</span>` },
+    { data: null, orderable: false, render: (v, t, r) => `<a class="btn btn-sm" href="${r.url}">Open sheet</a>` },
+  ];
+  const table = new DataTable("#evaluations", {
+    serverSide: true, processing: true, responsive: true,
+    ajax: { url: "{% url 'panel:evaluation_data' %}", data: (d) => Object.assign(d, values()) },
+    pageLength: 25, lengthMenu: [10, 25, 50, 100, 250],
+    order: [[5, "desc"]],
+    columns,
+    language: {
+      search: "", searchPlaceholder: "Search name, phone, ID, department, interviewer…",
+      lengthMenu: "Show _MENU_ candidates", info: "_START_–_END_ of _TOTAL_ candidates",
+      infoFiltered: "(filtered from _MAX_)", zeroRecords: "No candidates match", processing: "Loading…",
+    },
+  });
+  $(filters).on("change", "select, input", () => table.ajax.reload());
+  document.getElementById("reset-filters").addEventListener("click", () => {
+    filters.querySelectorAll("select, input").forEach((el) => {
+      el.value = "";
+      if (el.setDate) el.setDate("");
+    });
+    $(filters).find("select").trigger("change.select2");
+    table.search("").ajax.reload();
+  });
+})();
+</script>
+{% endblock %}

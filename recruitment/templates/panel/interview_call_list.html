@@ -1,0 +1,53 @@
+{% extends "panel/base.html" %}
+{% block title %}Interview Call{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Interview Call</h1>
+    <div class="muted">Upload the list of people called for interview and send them an SMS. They are not added to Candidates.</div>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="{% url 'panel:sms_log' %}">✉️ SMS Log</a>
+    <a class="btn" href="{% url 'panel:interview_call_create' %}">+ New Interview Call</a>
+  </div>
+</div>
+
+{% if not has_gateway %}
+  <div class="alert error">No SMS API is set up yet. <a href="{% url 'panel:sms_settings' %}">Add the API key and Sender ID</a> before sending SMS.</div>
+{% endif %}
+
+<div class="card dt-card">
+  <form method="get" class="filters">
+    <select class="input" name="department" data-searchable aria-label="Department">
+      <option value="">All departments</option>
+      {% for d in departments %}<option value="{{ d.pk }}" {% if filters.department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+    </select>
+    <input class="input" type="text" name="date" value="{{ filters.date }}" data-datepicker placeholder="Upload date" autocomplete="off">
+    <button class="btn" type="submit">Filter</button>
+    <a class="btn btn-ghost" href="{% url 'panel:interview_call_list' %}">Reset</a>
+  </form>
+  <div>
+    <table class="datatable display" style="width:100%" data-order-col="4" data-order-dir="desc">
+      <thead><tr><th>Interview Call</th><th>Department</th><th>People</th><th>SMS</th><th>Created</th><th class="no-sort"></th></tr></thead>
+      <tbody>
+      {% for c in calls %}
+        <tr>
+          <td><a href="{% url 'panel:interview_call_detail' c.pk %}"><strong>{{ c.title }}</strong></a><div class="muted">{{ c.original_filename }}</div></td>
+          <td>{{ c.department.name }}</td>
+          <td>{% if c.stage == "mapping" %}<span class="badge badge-pending">Columns not mapped</span>{% else %}{{ c.people_count }}{% endif %}</td>
+          <td>
+            <span class="badge badge-selected">{{ c.sent_count }} sent</span>
+            {% if c.failed_count %}<span class="badge badge-not_selected">{{ c.failed_count }} failed</span>{% endif %}
+          </td>
+          <td data-order="{{ c.created_at|date:'c' }}">{{ c.created_at|date:"d M Y" }}<div class="muted">{{ c.created_by.email|default:"" }}</div></td>
+          <td><div class="row-actions">
+            <a class="btn btn-sm" href="{% url 'panel:interview_call_detail' c.pk %}">Open</a>
+            <a class="btn btn-sm btn-red" href="{% url 'panel:interview_call_delete' c.pk %}">Delete</a>
+          </div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
