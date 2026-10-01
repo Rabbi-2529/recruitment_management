@@ -21,6 +21,7 @@ urlpatterns = [
     # interview
     path("interview/", v.interview, name="interview"),
     path("interview/suggest/", v.interview_suggest, name="interview_suggest"),
+    path("references/", iv.reference_list, name="reference_list"),
     path("interview/<int:pk>/", iv.candidate_sheet, name="interview_detail"),  # same page as evaluation_detail
     # written exam
     path("exams/", v.exam_list, name="exam_list"),

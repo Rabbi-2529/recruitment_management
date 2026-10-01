@@ -40,6 +40,7 @@ from .forms import (
 from .interview_call_import import ImportError_, build_people, guess_mapping, read_rows
 from .models import (
     Candidate,
+    CandidateReference,
     Department,
     EvaluationCriterion,
     InterviewCall,
@@ -639,6 +640,24 @@ def evaluation_data(request):
         })
     return JsonResponse({"draw": int(params.get("draw", 0) or 0), "recordsTotal": total,
                          "recordsFiltered": filtered, "data": rows})
+
+
+@admin_required
+def reference_list(request):
+    """Every reference given at registration, across all candidates."""
+    references = (
+        CandidateReference.objects.select_related("candidate", "candidate__department", "candidate__circular")
+        .order_by("candidate__name", "order", "id")
+    )
+    department = request.GET.get("department") or ""
+    if department.isdigit():
+        references = references.filter(candidate__department_id=int(department))
+    return render(request, "panel/reference_list.html", {
+        "references": references,
+        "departments": Department.objects.order_by("name"),
+        "selected_department": department,
+        "active": "references",
+    })
 
 
 @admin_required

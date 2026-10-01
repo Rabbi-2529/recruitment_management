@@ -137,15 +137,6 @@
     sync();
   }
 
-  // ---------------------------------------------------------------- references popup
-  const refModal = document.getElementById("ref-modal");
-  const refOpeners = [document.getElementById("ref-open"), document.getElementById("ref-open-2")].filter(Boolean);
-  if (refModal && refOpeners.length) {
-    refOpeners.forEach((b) => b.addEventListener("click", () => refModal.showModal()));
-    refModal.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => refModal.close()));
-    refModal.addEventListener("click", (e) => { if (e.target === refModal) refModal.close(); });
-  }
-
   // ---------------------------------------------------------------- waiting reason only for "Waiting"
   // the status select lives in the bar at the top of the page (it posts with #interview-info)
   const status = document.querySelector(".status-bar select[name=status], #interview-info select[name=status]");

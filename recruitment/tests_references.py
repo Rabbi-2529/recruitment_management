@@ -122,3 +122,30 @@ class ReferenceRegistrationTests(TestCase):
         self.assertContains(sheet, reverse("panel:candidate_summary", args=[candidate.pk]))
         self.client.logout()
         self.assertEqual(self.client.get(reverse("panel:candidate_summary", args=[candidate.pk])).status_code, 302)
+
+    def test_the_panel_lists_every_reference(self):
+        from django.contrib.auth import get_user_model
+
+        self.client.post(self.url, self.form_data(
+            [{"name": "Mr Karim", "organisation": "IGL Group", "designation": "Manager", "phone": "01711000002"},
+             {"name": "Dr Rahman", "organisation": "Dhaka University", "phone": "01911000003"}],
+            cv=cv_file(),
+        ))
+        root = get_user_model().objects.create_superuser("root@iglweb.com", "root@iglweb.com", "StrongPass#2026")
+        self.client.force_login(root)
+
+        page = self.client.get(reverse("panel:reference_list"))
+        self.assertEqual(page.status_code, 200)
+        for text in ("Mr Karim", "Dr Rahman", "IGL Group", "Dhaka University", "Mim Akter"):
+            self.assertContains(page, text)
+        self.assertContains(page, "2 in total")
+
+        # the popup on the sheet carries the same details
+        candidate = Candidate.objects.get(phone="01811000001")
+        sheet = self.client.get(reverse("panel:evaluation_detail", args=[candidate.pk]))
+        self.assertContains(sheet, 'id="ref-modal"')
+        self.assertContains(sheet, "01711000002")
+        self.assertContains(sheet, "Manager")
+
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("panel:reference_list")).status_code, 302)

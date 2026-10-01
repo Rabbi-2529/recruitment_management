@@ -1,0 +1,56 @@
+{% extends "panel/base.html" %}
+{% block title %}References{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>References</h1>
+    <div class="muted">Everyone the candidates named at registration — {{ references|length }} in total.</div>
+  </div>
+</div>
+
+<div class="card dt-card">
+  <div class="dt-toolbar">
+    <select class="input" data-filter-for="references-table" data-column="1" aria-label="Department">
+      <option value="">All departments</option>
+      {% for d in departments %}<option value="d{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <table id="references-table" class="datatable display" style="width:100%" data-order-col="2"
+         data-search-placeholder="Search reference, candidate, company…" data-empty="No reference has been given yet.">
+    <thead>
+      <tr><th>Candidate</th><th>Department</th><th>Reference</th><th>Company / University</th>
+        <th>Designation</th><th>Phone</th><th>Email</th><th class="no-sort"></th></tr>
+    </thead>
+    <tbody>
+    {% for r in references %}
+      <tr>
+        <td><a class="cand-link" href="{% url 'panel:evaluation_detail' r.candidate_id %}"><strong>{{ r.candidate.name }}</strong></a>
+          <div class="muted">{{ r.candidate.registration_no }} · {{ r.candidate.phone }}</div></td>
+        <td data-search="d{{ r.candidate.department_id }}">{{ r.candidate.department.name }}</td>
+        <td><strong>{{ r.name }}</strong></td>
+        <td>{{ r.organisation|default:"—" }}</td>
+        <td>{{ r.designation|default:"—" }}</td>
+        <td>{% if r.phone %}<a href="tel:{{ r.phone }}">{{ r.phone }}</a>{% else %}—{% endif %}</td>
+        <td>{% if r.email %}<a href="mailto:{{ r.email }}">{{ r.email }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td><a class="btn btn-sm btn-ghost" href="{% url 'panel:evaluation_detail' r.candidate_id %}">Open sheet</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // the department filter matches the hidden key on the cell ("d12")
+  document.querySelectorAll("select[data-filter-for]").forEach((sel) => {
+    const table = document.getElementById(sel.dataset.filterFor);
+    if (!table) return;
+    const dt = new DataTable.Api(table);
+    sel.addEventListener("change", () => {
+      const v = sel.value;
+      dt.column(+sel.dataset.column).search(v ? "^" + v + "$" : "", true, false).draw();
+    });
+  });
+</script>
+{% endblock %}
