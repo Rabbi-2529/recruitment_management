@@ -856,3 +856,22 @@ class SmsLog(models.Model):
 
     def __str__(self):
         return f"{self.phone} - {self.status}"
+
+
+class CandidateReference(models.Model):
+    """A reference the candidate gives when registering: who can vouch for them."""
+
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name="references")
+    name = models.CharField(max_length=120)
+    organisation = models.CharField("Company / University", max_length=160, blank=True)
+    designation = models.CharField(max_length=120, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.name} ({self.organisation})" if self.organisation else self.name

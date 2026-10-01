@@ -641,6 +641,41 @@ def evaluation_data(request):
                          "recordsFiltered": filtered, "data": rows})
 
 
+@admin_required
+def candidate_summary(request, pk):
+    """One-page printable summary of a candidate (the "Download PDF" button opens this)."""
+    candidate = get_object_or_404(
+        Candidate.objects.select_related("circular", "department").prefetch_related("references"), pk=pk
+    )
+    data = summary(candidate)
+    written, written_percent = latest_written(candidate)
+    combined = combined_result(written_percent, data["average_percent"])
+    criteria_names = []
+    for evaluation in data["evaluations"]:
+        for score in evaluation.scores.all():
+            if score.criterion_name not in criteria_names:
+                criteria_names.append(score.criterion_name)
+    grid = []
+    for evaluation in data["evaluations"]:
+        by_name = {sc.criterion_name: sc for sc in evaluation.scores.all()}
+        grid.append((evaluation, [by_name.get(name) for name in criteria_names]))
+    grid_averages = []
+    for i, _name in enumerate(criteria_names):
+        values = [scores[i].mark for evaluation, scores in grid
+                  if evaluation.is_submitted and scores[i] is not None and scores[i].mark is not None]
+        grid_averages.append(round(sum(values) / len(values), 2) if values else None)
+    calls = list(candidate.interview_calls.select_related("interview_call"))
+    interview_date = candidate.circular.interview_date or next(
+        (c.interview_call.interview_date for c in calls if c.interview_call.interview_date), None
+    )
+    return render(request, "panel/candidate_summary.html", {
+        "candidate": candidate, "criteria_names": criteria_names, "grid": grid, "grid_averages": grid_averages,
+        "written": written, "written_percent": written_percent, "combined": combined,
+        "setting": InterviewSetting.load(), "interview_date": interview_date, "printed_at": timezone.now(),
+        **data,
+    })
+
+
 def _fmt_number(value):
     if value is None:
         return ""
@@ -670,6 +705,9 @@ def candidate_sheet(request, pk):
     sheet_form = InterviewForm(
         request.POST if action == "sheet" else None, request.FILES if action == "sheet" else None, instance=candidate,
     )
+    # the main status sits in the bar at the top of the page, outside the form element it belongs to
+    for name in ("status", "waiting_reason"):
+        sheet_form.fields[name].widget.attrs["form"] = "interview-info"
     eval_form = EvaluationForm(
         request.POST if action == "evaluation" else None, instance=admin_evaluation,
         rows=sheet_rows(admin_evaluation, include_new=True), prefix="ev",

@@ -16,6 +16,51 @@
       <span class="interview-box__icon" aria-hidden="true">📅</span>
       <div><div class="interview-box__label">Interview Date</div><div class="interview-box__when" id="interview-when"></div><div class="interview-box__note">Your time slot will be informed by HR.</div></div>
     </div>
+    {# ---------------------------------------------- references (add as many as you like) #}
+    <section class="ref-block">
+      <div class="ref-block__head">
+        <div>
+          <h3>Reference</h3>
+          <p class="muted">Someone who can speak for you - from your company, university or field. You may add more than one.</p>
+        </div>
+        <button type="button" class="btn btn-sm" id="ref-add">+ Add reference</button>
+      </div>
+      {{ references.management_form }}
+      {% if references.non_form_errors %}<ul class="errors">{% for e in references.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <div id="ref-rows">
+        {% for ref in references %}
+          <fieldset class="ref-row">
+            <legend class="ref-row__no">Reference <span data-ref-no>{{ forloop.counter }}</span></legend>
+            <button type="button" class="ref-remove" title="Remove this reference" aria-label="Remove this reference">−</button>
+            {% for hidden in ref.hidden_fields %}{{ hidden }}{% endfor %}
+            <div class="grid-2">
+              {% with f=ref.name %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.organisation %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.designation %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.phone %}{% include "panel/_field.html" %}{% endwith %}
+            </div>
+            {% with f=ref.email %}{% include "panel/_field.html" %}{% endwith %}
+          </fieldset>
+        {% endfor %}
+      </div>
+      <template id="ref-template">
+        <fieldset class="ref-row">
+          <legend class="ref-row__no">Reference <span data-ref-no></span></legend>
+          <button type="button" class="ref-remove" title="Remove this reference" aria-label="Remove this reference">−</button>
+          {% with ref=references.empty_form %}
+            {% for hidden in ref.hidden_fields %}{{ hidden }}{% endfor %}
+            <div class="grid-2">
+              {% with f=ref.name %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.organisation %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.designation %}{% include "panel/_field.html" %}{% endwith %}
+              {% with f=ref.phone %}{% include "panel/_field.html" %}{% endwith %}
+            </div>
+            {% with f=ref.email %}{% include "panel/_field.html" %}{% endwith %}
+          {% endwith %}
+        </fieldset>
+      </template>
+    </section>
+
     <button type="submit" class="btn btn-block">Register</button>
     <p class="form-foot">Already registered? <a href="{% url 'public:landing' %}">Check your result</a></p>
   </form>
@@ -45,5 +90,43 @@
     $("#id_circular").on("change", show);
     show();
   });
+
+  // references: + adds a row, − removes it; the formset's TOTAL_FORMS is kept in step
+  (function () {
+    const rows = document.getElementById("ref-rows");
+    const tpl = document.getElementById("ref-template");
+    const total = document.querySelector("input[name='ref-TOTAL_FORMS']");
+    if (!rows || !tpl || !total) return;
+    const addBtn = document.getElementById("ref-add");
+    const maxRows = parseInt(document.querySelector("input[name='ref-MAX_NUM_FORMS']").value || "10", 10);
+
+    const renumber = () => {
+      [...rows.children].forEach((row, i) => {
+        row.querySelector("[data-ref-no]").textContent = i + 1;
+        row.querySelectorAll("input, select, textarea, label").forEach((el) => {
+          ["name", "id", "for"].forEach((attr) => {
+            const v = el.getAttribute(attr);
+            if (v) el.setAttribute(attr, v.replace(/ref-(\d+|__prefix__)-/, "ref-" + i + "-"));
+          });
+        });
+      });
+      total.value = rows.children.length;
+      addBtn.disabled = rows.children.length >= maxRows;
+    };
+
+    addBtn.addEventListener("click", () => {
+      if (rows.children.length >= maxRows) return;
+      rows.appendChild(tpl.content.cloneNode(true));
+      renumber();
+      const added = rows.lastElementChild.querySelector("input");
+      if (added) added.focus();
+    });
+    rows.addEventListener("click", (e) => {
+      if (!e.target.matches(".ref-remove")) return;
+      e.target.closest(".ref-row").remove();
+      renumber();
+    });
+    renumber();
+  })();
 </script>
 {% endblock %}

@@ -1,0 +1,169 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ candidate.name }} · Interview Summary</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    /* one A4 page, printed straight to PDF - nothing here depends on the main stylesheet */
+    @page { size: A4 portrait; margin: 10mm 10mm 8mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      color: #0f172a; margin: 0; font-size: 9.2pt; line-height: 1.35; background: #fff;
+    }
+    .sheet { width: 190mm; margin: 0 auto; }
+    h1, h2, h3 { margin: 0; }
+    .head { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; }
+    .head img { width: 42px; height: 42px; }
+    .head__title { flex: 1; }
+    .head h1 { font-size: 14pt; letter-spacing: -.01em; }
+    .head .sub { color: #64748b; font-size: 8pt; }
+    .pill { padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 8.5pt; border: 1px solid; }
+    .s-selected { background: #e8f5f3; color: #0f766e; border-color: #a8d5cf; }
+    .s-pending { background: #fdf5e9; color: #b45309; border-color: #eedcb8; }
+    .s-waiting { background: #eef4ff; color: #1d4ed8; border-color: #c2d5fb; }
+    .s-not_selected { background: #fdeded; color: #b91c1c; border-color: #f2c4c4; }
+
+    .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 10px; margin: 8px 0; }
+    .facts dt { font-size: 6.6pt; text-transform: uppercase; letter-spacing: .05em; color: #64748b; font-weight: 700; }
+    .facts dd { margin: 0; font-weight: 600; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+    .kpi { border: 1px solid #e2e8f0; border-top: 2px solid #1d4ed8; border-radius: 6px; padding: 5px 8px; }
+    .kpi span { display: block; font-size: 6.6pt; text-transform: uppercase; letter-spacing: .05em; color: #64748b; font-weight: 700; }
+    .kpi strong { font-size: 13pt; }
+    .kpi small { color: #64748b; font-weight: 600; }
+    .kpi--teal { border-top-color: #0f766e; }
+    .kpi--grey { border-top-color: #94a3b8; }
+
+    h3.section { font-size: 9pt; text-transform: uppercase; letter-spacing: .05em; color: #1d4ed8; margin: 9px 0 4px; }
+    table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+    .box, .head, .kpis { page-break-inside: avoid; }
+    th, td { border: 1px solid #e2e8f0; padding: 3px 5px; text-align: left; }
+    th { background: #f1f5f9; font-size: 7pt; text-transform: uppercase; letter-spacing: .04em; color: #475569; }
+    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+    tfoot td { background: #eef4ff; font-weight: 700; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 7px; }
+    .box b { display: block; font-size: 7.4pt; color: #475569; }
+    .note { white-space: pre-wrap; }
+    .muted { color: #64748b; }
+    .foot { margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 4px; display: flex; justify-content: space-between; color: #64748b; font-size: 7.4pt; }
+    @media print { .noprint { display: none !important; } }
+    .noprint { position: fixed; top: 8px; right: 8px; display: flex; gap: 6px; }
+    .noprint button, .noprint a {
+      font: inherit; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid #1d4ed8;
+      background: #1d4ed8; color: #fff; cursor: pointer; text-decoration: none;
+    }
+    .noprint a { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+  </style>
+</head>
+<body>
+<div class="noprint">
+  <button type="button" onclick="window.print()">⬇️ Save as PDF</button>
+  <a href="{% url 'panel:evaluation_detail' candidate.pk %}">Back</a>
+</div>
+
+<div class="sheet">
+  <div class="head">
+    <img src="{% static 'img/logo.svg' %}" alt="IGL">
+    <div class="head__title">
+      <h1>Interview Summary — {{ candidate.name }}</h1>
+      <div class="sub">IGL Group · {{ candidate.circular.title }} ({{ candidate.circular.reference_no }}) · {{ candidate.department.name }}</div>
+    </div>
+    <span class="pill s-{{ candidate.status }}">{{ candidate.get_status_display }}</span>
+  </div>
+
+  <dl class="facts">
+    <div><dt>Candidate ID</dt><dd>{{ candidate.registration_no }}</dd></div>
+    <div><dt>Phone</dt><dd>{{ candidate.phone }}</dd></div>
+    <div><dt>Email</dt><dd>{{ candidate.email|default:"—" }}</dd></div>
+    <div><dt>Interview date</dt><dd>{{ interview_date|date:"d M Y"|default:"Not set" }}</dd></div>
+    <div><dt>Expected salary</dt><dd>{% if candidate.expected_salary %}৳ {{ candidate.expected_salary|floatformat:"0" }}{% else %}—{% endif %}</dd></div>
+    <div><dt>Available from</dt><dd>{{ candidate.available_date|date:"d M Y"|default:"—" }}</dd></div>
+    <div><dt>HR rating</dt><dd>{% if candidate.rating %}{{ candidate.rating }} / 5{% else %}—{% endif %}</dd></div>
+    <div><dt>Source</dt><dd>{{ candidate.get_source_display }}</dd></div>
+  </dl>
+
+  <div class="kpis">
+    <div class="kpi"><span>Interview average</span>
+      <strong>{% if average_total is not None %}{{ average_total|floatformat:"-2" }}{% else %}—{% endif %}</strong>
+      <small>{% if average_out_of %}/ {{ average_out_of|floatformat:"-2" }} · {{ average_percent|floatformat:"-2" }}%{% endif %}</small></div>
+    <div class="kpi kpi--grey"><span>Evaluations</span>
+      <strong>{{ interviewer_submitted_count }}</strong><small> interviewer sheet{{ interviewer_submitted_count|pluralize }} submitted</small></div>
+    <div class="kpi kpi--teal"><span>Written exam</span>
+      <strong>{% if written %}{{ written.total_score|floatformat:"-2" }}{% else %}—{% endif %}</strong>
+      <small>{% if written %}/ {{ written.out_of|floatformat:"-2" }} · {{ written.result_label }}{% else %}not taken{% endif %}</small></div>
+    <div class="kpi"><span>Final combined</span>
+      <strong>{% if combined is not None %}{{ combined|floatformat:"-2" }}%{% else %}—{% endif %}</strong>
+      <small>W {{ setting.written_weight }}% · I {{ setting.interview_weight }}%</small></div>
+  </div>
+
+  <h3 class="section">Interview questions &amp; marks (0 – 5 each)</h3>
+  {% if grid %}
+    <table>
+      <thead><tr><th>Interviewer</th>{% for name in criteria_names %}<th class="n">{{ name }}</th>{% endfor %}
+        <th class="n">Total</th><th class="n">Max</th><th class="n">%</th><th>Recommendation</th></tr></thead>
+      <tbody>
+      {% for evaluation, scores in grid %}
+        <tr>
+          <td>{{ evaluation.interviewer_name }}{% if evaluation.interviewer.is_superuser %} (Admin){% endif %}{% if not evaluation.is_submitted %} <span class="muted">· draft</span>{% endif %}</td>
+          {% for score in scores %}<td class="n">{% if score and score.mark is not None %}{{ score.mark }}{% else %}—{% endif %}</td>{% endfor %}
+          <td class="n">{{ evaluation.total_mark|floatformat:"-2" }}</td>
+          <td class="n">{{ evaluation.out_of|floatformat:"-2" }}</td>
+          <td class="n">{{ evaluation.percent|floatformat:"-2"|default:"—" }}</td>
+          <td>{{ evaluation.get_recommendation_display|default:"—" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      {% if submitted_count %}
+        <tfoot><tr><td>Average ({{ submitted_count }})</td>{% for v in grid_averages %}<td class="n">{{ v|default_if_none:"—" }}</td>{% endfor %}
+          <td class="n">{{ average_total|floatformat:"-2" }}</td><td class="n">{{ average_out_of|floatformat:"-2" }}</td>
+          <td class="n">{{ average_percent|floatformat:"-2" }}</td><td></td></tr></tfoot>
+      {% endif %}
+    </table>
+  {% else %}<p class="muted">No interviewer has marked this candidate yet.</p>{% endif %}
+
+  {% if evaluations %}
+    <h3 class="section">Comments</h3>
+    <div class="two">
+      {% for e in evaluations|slice:':6' %}
+        <div class="box"><b>{{ e.interviewer_name }}{% if e.interviewer.is_superuser %} (Admin){% endif %} — {{ e.total_mark|floatformat:"-2" }}/{{ e.out_of|floatformat:"-2" }}</b>
+          {{ e.comments|default:"—"|truncatechars:220 }}
+          {% if e.strengths %}<div><b>Strengths</b>{{ e.strengths|truncatechars:120 }}</div>{% endif %}
+          {% if e.weaknesses %}<div><b>Weaknesses</b>{{ e.weaknesses|truncatechars:120 }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% if evaluations|length > 6 %}<p class="muted">… and {{ evaluations|length|add:"-6" }} more sheet(s) - see the portal.</p>{% endif %}
+  {% endif %}
+
+  {% if candidate.references.all %}
+    <h3 class="section">References</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Company / University</th><th>Designation</th><th>Phone</th><th>Email</th></tr></thead>
+      <tbody>
+      {% for r in candidate.references.all|slice:':8' %}
+        <tr><td>{{ r.name }}</td><td>{{ r.organisation|default:"—" }}</td><td>{{ r.designation|default:"—" }}</td>
+          <td>{{ r.phone|default:"—" }}</td><td>{{ r.email|default:"—" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if candidate.note or candidate.waiting_reason %}
+    <h3 class="section">HR note</h3>
+    <div class="box note">{{ candidate.note|default:"" }}{% if candidate.waiting_reason %}
+Waiting reason: {{ candidate.waiting_reason }}{% endif %}</div>
+  {% endif %}
+
+  <div class="foot">
+    <span>IGL Group · Internal document — not to be shared with the candidate.</span>
+    <span>Printed {{ printed_at|date:"d M Y, h:i A" }}</span>
+  </div>
+</div>
+
+<script>window.addEventListener("load", () => { if (!location.search.includes("noprint")) window.print(); });</script>
+</body>
+</html>

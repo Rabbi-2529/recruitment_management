@@ -7,6 +7,7 @@ from .models import (
     MARK_CHOICES,
     RATING_CHOICES,
     Candidate,
+    CandidateReference,
     Choice,
     Circular,
     Department,
@@ -95,6 +96,62 @@ class PublicSearchForm(StyledFormMixin, forms.Form):
 
     def clean_phone(self):
         return clean_phone_value(self.cleaned_data["phone"])
+
+
+class ReferenceForm(StyledFormMixin, forms.ModelForm):
+    """One reference row on the registration page (the + button adds more)."""
+
+    class Meta:
+        model = CandidateReference
+        fields = ["name", "organisation", "designation", "phone", "email"]
+        labels = {
+            "name": "Reference name",
+            "organisation": "Company / University",
+            "designation": "Designation",
+            "phone": "Phone number",
+            "email": "Email (optional)",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "Name of the person"}),
+            "organisation": forms.TextInput(attrs={"placeholder": "Where they work or study"}),
+            "designation": forms.TextInput(attrs={"placeholder": "e.g. Manager, Lecturer"}),
+            "phone": forms.TextInput(attrs=PHONE_ATTRS),
+            "email": forms.EmailInput(attrs={"placeholder": "name@example.com"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # a row that is added must carry a name and a phone number; a row left completely
+        # empty is simply dropped (Django skips unchanged extra forms)
+        self.fields["name"].required = True
+        self.fields["phone"].required = True
+
+    def clean_name(self):
+        return " ".join(self.cleaned_data["name"].split())
+
+    def clean_phone(self):
+        return clean_phone_value(self.cleaned_data["phone"])
+
+
+class BaseReferenceFormSet(forms.BaseInlineFormSet):
+    """Empty rows are simply ignored, so a candidate may give none, one or many."""
+
+    def clean(self):
+        super().clean()
+        self.kept = [f for f in self.forms if f.cleaned_data.get("name") and not f.cleaned_data.get("DELETE")]
+
+    def save_for(self, candidate):
+        for order, form in enumerate(getattr(self, "kept", []), start=1):
+            reference = form.save(commit=False)
+            reference.candidate = candidate
+            reference.order = order
+            reference.save()
+
+
+ReferenceFormSet = forms.inlineformset_factory(
+    Candidate, CandidateReference, form=ReferenceForm, formset=BaseReferenceFormSet,
+    extra=0, can_delete=False, max_num=10, validate_max=True,  # rows appear only when "+" is clicked
+)
 
 
 class RegistrationForm(StyledFormMixin, forms.ModelForm):

@@ -71,6 +71,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "recruitment.context_processors.hr_contact",
+                "recruitment.context_processors.assets",
             ],
         },
     },
@@ -117,6 +118,18 @@ STORAGES = {
 # so MEDIA_ROOT does not have to be reachable from the web server.
 MEDIA_URL = URL_PREFIX + "/media/"
 MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
+
+
+def _asset_version():
+    """Newest css/js timestamp - appended to static links so browsers never serve a stale file."""
+    newest = 0
+    for folder in ((BASE_DIR / "static" / "css"), (BASE_DIR / "static" / "js")):
+        if folder.is_dir():
+            newest = max([newest] + [f.stat().st_mtime for f in folder.iterdir() if f.is_file()])
+    return str(int(newest))
+
+
+ASSET_VERSION = _asset_version()
 CV_MAX_BYTES = 1 * 1024 * 1024  # 1 MB
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

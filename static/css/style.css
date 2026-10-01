@@ -56,7 +56,7 @@ h1, h2, h3 { margin: 0 0 .5rem; line-height: 1.25; }
 }
 .input:focus { outline: 2px solid rgba(29, 78, 216, .22); border-color: var(--primary); }
 textarea.input { resize: vertical; }
-.field { margin-bottom: 1rem; }
+.field { margin-bottom: .8rem; }
 .field label { display: block; font-weight: 600; margin-bottom: .35rem; font-size: .9rem; }
 .field .help { color: var(--muted); font-size: .8rem; margin-top: .25rem; }
 .field .errors { color: var(--red); font-size: .85rem; margin: .3rem 0 0; padding: 0; list-style: none; }
@@ -95,7 +95,7 @@ textarea.input { resize: vertical; }
 .alert.error { background: var(--red-soft); color: #8f1414; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.card-pad { padding: 1.25rem; }
+.card-pad { padding: 1rem 1.15rem; }
 
 /* ---------- public landing ---------- */
 .public {
@@ -150,8 +150,8 @@ textarea.input { resize: vertical; }
 .sidebar .nav-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--nav-muted); padding: .8rem .8rem .3rem; }
 .sidebar .user { padding: 1rem 1.2rem; border-top: 1px solid var(--nav-2); font-size: .85rem; }
 .sidebar .user button { margin-top: .5rem; }
-.content { flex: 1; min-width: 0; padding: 1.5rem 2rem 3rem; }
-.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.content { flex: 1; min-width: 0; padding: 1.25rem 1.75rem 2.5rem; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
 .page-head h1 { font-size: 1.5rem; margin: 0; }
 .page-head .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
@@ -163,7 +163,7 @@ textarea.input { resize: vertical; }
 .stat.red .value { color: var(--red); }
 .stat.amber .value { color: var(--amber); }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem 1rem; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -184,7 +184,7 @@ td .row-actions { display: flex; gap: .35rem; justify-content: flex-end; }
 
 .pagination { display: flex; gap: .35rem; align-items: center; justify-content: space-between; padding: .8rem 1rem; color: var(--muted); font-size: .9rem; }
 .form-card { max-width: 640px; }
-.form-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.form-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .9rem; }
 .muted { color: var(--muted); }
 code { background: #eef2f7; padding: .1rem .35rem; border-radius: 4px; font-size: .85em; }
 
@@ -708,7 +708,7 @@ table.dataTable th.num, table.dataTable td.num { text-align: right; }
 .status-waiting { background: var(--primary-soft); color: var(--primary); border-color: var(--primary-line); }
 .status-not_selected { background: var(--red-soft); color: var(--red); border-color: var(--red-line); }
 
-.sheet-hero { padding: 1.25rem 1.4rem; margin-bottom: 1rem; }
+.sheet-hero { padding: 1rem 1.15rem; margin-bottom: .75rem; }
 .sheet-hero__main { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .sheet-hero__avatar {
   width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; flex: none;
@@ -719,22 +719,22 @@ table.dataTable th.num, table.dataTable td.num { text-align: right; }
 .sheet-hero__status .muted { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .2rem; }
 
 .info-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .9rem 1.4rem;
-  margin: 1.1rem 0 0; padding-top: 1.1rem; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .55rem 1.25rem;
+  margin: .8rem 0 0; padding-top: .8rem; border-top: 1px solid var(--line);
 }
 .info-grid dt { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .info-grid dd { margin: .15rem 0 0; font-weight: 500; overflow-wrap: anywhere; }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-.kpi { padding: 1rem 1.2rem; display: block; color: var(--ink); border-top: 3px solid var(--line); }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; margin-bottom: .75rem; }
+.kpi { padding: .8rem 1rem; display: block; color: var(--ink); border-top: 3px solid var(--line); }
 a.kpi:hover { text-decoration: none; border-top-color: var(--primary); }
 .kpi__label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.kpi__value { font-size: 1.75rem; font-weight: 700; margin: .2rem 0; font-variant-numeric: tabular-nums; }
+.kpi__value { font-size: 1.6rem; font-weight: 700; margin: .1rem 0; font-variant-numeric: tabular-nums; }
 .kpi__value small { font-size: .9rem; color: var(--muted); font-weight: 500; margin-left: .2rem; }
 .kpi__foot { font-size: .82rem; color: var(--muted); }
 .kpi--accent { border-top-color: var(--primary); background: linear-gradient(180deg, var(--primary-soft), #fff 72%); }
 
-.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-bottom: .75rem; }
 .chart-card h3 { font-size: 1rem; }
 .chart-card--wide { grid-column: 1 / -1; }
 .chart-box { position: relative; height: 280px; }
@@ -744,9 +744,9 @@ a.kpi:hover { text-decoration: none; border-top-color: var(--primary); }
   border-radius: 10px; background: var(--bg);
 }
 
-.sheet-section { margin-bottom: 1rem; }
-.sheet-section.card:not(.dt-card) { padding: 1.2rem 1.4rem; }
-.section-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.sheet-section { margin-bottom: .75rem; }
+.sheet-section.card:not(.dt-card) { padding: 1rem 1.15rem; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-bottom: .5rem; }
 .section-head h3 { margin: 0; }
 .dt-card > .section-head { padding: 1rem 1.2rem 0; }
 
@@ -765,12 +765,13 @@ a.kpi:hover { text-decoration: none; border-top-color: var(--primary); }
 .eval-questions .eval-mark { max-width: 5.5rem; }
 .eval-questions tfoot td { border-top: 2px solid var(--line); padding-top: .7rem; }
 
-.comment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.comment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: .75rem; margin-bottom: .75rem; }
+/* auto-fit (not auto-fill) so a single comment card fills the row instead of leaving an empty column */
 .comment-card header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .5rem; }
 .comment-card__score { font-size: 1.3rem; font-weight: 700; }
 .comment-card__score small { font-size: .85rem; color: var(--muted); font-weight: 500; }
 .comment-card dl { margin: .5rem 0 0; }
-.comment-card dt { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: .55rem; }
+.comment-card dt { font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: .45rem; }
 .comment-card dd { margin: .1rem 0 0; }
 .rec { display: inline-block; padding: .15rem .6rem; border-radius: 6px; font-size: .8rem; font-weight: 600; }
 .rec-strongly_recommend { background: var(--success); color: #fff; }
@@ -778,7 +779,7 @@ a.kpi:hover { text-decoration: none; border-top-color: var(--primary); }
 .rec-neutral { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
 .rec-not_recommend { background: var(--red-soft); color: var(--red); }
 
-.sheet-two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; align-items: start; }
+.sheet-two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; margin-bottom: .75rem; align-items: start; }
 .sheet-two-col > * { margin-bottom: 0; }
 .list-row { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
 .list-row:last-child { border-bottom: 0; }
@@ -911,3 +912,172 @@ fieldset:disabled .mark-dot:hover { transform: none; }
 .mark-dot.on.mark-5 { background: #08453f; color: #fff; }
 .os-legend .mark-0 { background: #7cc0b8; } .os-legend .mark-2 { background: #358d85; }
 .os-legend .mark-3 { background: #1c7871; } .os-legend .mark-5 { background: #08453f; }
+
+/* average of every interviewer's sheet, shown with the marks table at the top of the sheet */
+.avg-pill {
+  display: inline-flex; align-items: baseline; gap: .45rem; padding: .3rem .8rem; border-radius: 999px;
+  background: var(--primary-soft); border: 1px solid var(--primary-line); color: var(--primary);
+  font-size: .82rem; font-weight: 600;
+}
+.avg-pill strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.avg-pill span { color: var(--ink); font-weight: 700; }
+/* DataTables clones the footer when the table scrolls sideways, so style by class */
+.eval-grid tfoot td, .dt-scroll-foot .eval-grid td {
+  background: var(--primary-soft); border-top: 2px solid var(--primary-line) !important; font-weight: 700; color: var(--ink);
+}
+.dt-scroll-foot { border-top: 0 !important; }
+
+/* ---------- compact sheet forms (the Admin's own marks + Interview information) ---------- */
+.eval-table { width: 100%; max-width: none; }
+.eval-table th, .eval-table td { padding: .3rem .5rem; }
+.eval-table thead th { font-size: .7rem; }
+.eval-table .input, .eval-table .eval-mark { max-width: 76px; padding: .3rem .45rem; text-align: center; }
+.eval-table tfoot td { border-top: 2px solid var(--line); background: var(--head); }
+
+.sheet-section .field { margin-bottom: .55rem; }
+.sheet-section .field label { margin-bottom: .2rem; }
+.sheet-section .field .help { margin-top: .12rem; line-height: 1.35; }
+.sheet-section textarea.input { min-height: 58px; }
+.sheet-section .grid-2 { gap: 0 1rem; }
+.sheet-two-col .form-actions { margin-top: .6rem; }
+.comment-card dd { line-height: 1.4; }
+
+/* the marks table footer: DataTables clones it into .dt-scroll-foot, so win on both */
+.eval-grid tfoot td, .dt-scroll-foot .eval-grid td,
+table.dataTable.eval-grid tfoot td { background: var(--primary-soft) !important; font-weight: 700 !important; color: var(--ink); }
+
+/* ---------- Main status: the most important control on the sheet ---------- */
+.status-field {
+  grid-column: 1 / -1; padding: .7rem .9rem; border-radius: 10px; border: 1px solid var(--primary-line);
+  background: var(--primary-soft); margin-bottom: .7rem;
+}
+.status-field label { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .95rem; }
+.status-field__now { font-size: .78rem; font-weight: 700; padding: .12rem .6rem; border-radius: 999px; background: #fff; border: 1px solid var(--line); }
+.status-field select {
+  font-weight: 700; font-size: 1rem; background: #fff; border-width: 2px;
+}
+.status-field .help { margin-top: .3rem; }
+/* the block takes the colour of the status it is showing */
+.status-field.s-selected { background: var(--success-soft); border-color: var(--success-line); }
+.status-field.s-selected .status-field__now { color: var(--success); border-color: var(--success-line); }
+.status-field.s-selected select { border-color: var(--success); }
+.status-field.s-waiting select { border-color: var(--primary); }
+.status-field.s-waiting .status-field__now { color: var(--primary); border-color: var(--primary-line); }
+.status-field.s-pending { background: var(--amber-soft); border-color: var(--amber-line); }
+.status-field.s-pending .status-field__now { color: var(--amber); border-color: var(--amber-line); }
+.status-field.s-pending select { border-color: var(--amber); }
+.status-field.s-not_selected { background: var(--red-soft); border-color: var(--red-line); }
+.status-field.s-not_selected .status-field__now { color: var(--red); border-color: var(--red-line); }
+.status-field.s-not_selected select { border-color: var(--red); }
+
+/* keep a little room between rows so help text never touches the next field */
+.sheet-section .grid-2 { gap: .35rem 1rem; }
+
+/* the status bar at the top of the candidate sheet */
+.status-bar { margin: 0 0 .75rem; padding: .8rem 1rem; }
+/* main status and waiting reason share the row half and half (6 + 6) */
+.status-bar__main { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem 1rem; align-items: start; }
+.status-bar__main > div { min-width: 0; }
+.status-bar__main > .btn { grid-column: 1 / -1; justify-self: start; }
+.status-bar label { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: .9rem; margin-bottom: .25rem; }
+.status-bar select, .status-bar textarea { background: #fff; }
+.status-bar select { font-weight: 700; font-size: 1rem; border-width: 2px; }
+.status-bar textarea { min-height: 42px; }
+.status-bar .btn { flex: 0 0 auto; }
+.status-bar .help { margin-top: .45rem; }
+@media (max-width: 700px) { .status-bar__main { grid-template-columns: 1fr; } }
+/* the waiting reason only shows for "Waiting" - without it the status takes the whole row */
+.status-bar__main:has(> #waiting-reason-field[hidden]) { grid-template-columns: 1fr; }
+.status-bar__main.no-reason { grid-template-columns: 1fr; }
+/* side-by-side halves: no stretching, so neither card grows empty space */
+.top-row > .sheet-hero, .top-row > .status-bar { margin-bottom: 0; }
+/* .status-field spans the form grid, but in the top row it is a column of its own */
+.top-row > .status-bar { grid-column: auto; }
+.top-row .info-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .45rem .9rem; }
+.top-row .status-bar__main { grid-template-columns: 1fr; }
+.top-row .status-bar .help { font-size: .76rem; }
+
+/* the information card is kept compact so it matches the marks table beside it */
+#interview-info textarea.input { height: 58px; min-height: 0; }
+#interview-info .file-input { padding: .3rem .4rem; font-size: .85rem; }
+#interview-info .field { margin-bottom: .5rem; }
+#my-evaluation .comment-card, .comment-grid { align-content: start; }
+
+/* ================================================================ polish: buttons, headings, cards */
+.btn {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+  transition: background .15s, box-shadow .15s, transform .06s, border-color .15s, color .15s;
+  letter-spacing: .01em;
+}
+.btn:hover { box-shadow: 0 3px 10px rgba(29, 78, 216, .25); }
+.btn:active { transform: translateY(1px); box-shadow: none; }
+.btn:focus-visible { outline: 3px solid rgba(29, 78, 216, .35); outline-offset: 2px; }
+.btn-ghost { color: var(--ink); box-shadow: none; }
+.btn-ghost:hover { background: var(--primary-soft); border-color: var(--primary-line); color: var(--primary); box-shadow: none; }
+.btn-red:hover { box-shadow: 0 3px 10px rgba(185, 28, 28, .25); }
+.btn-sm { font-weight: 600; }
+.btn[disabled] { opacity: .55; box-shadow: none; cursor: not-allowed; }
+
+/* section headings: a short accent bar, tighter type, muted sub-label */
+.section-head h3, .os-card__head h2 {
+  position: relative; padding-left: .7rem; font-size: 1.02rem; font-weight: 700; letter-spacing: -.01em; color: var(--ink);
+}
+.section-head h3::before, .os-card__head h2::before {
+  content: ""; position: absolute; left: 0; top: .18em; bottom: .18em; width: 3px; border-radius: 2px; background: var(--primary);
+}
+.section-head > .muted, .os-card__head p { font-size: .82rem; }
+
+/* cards: a hairline that lifts them off the grey page */
+.card, .os-card { border-color: #e6eaf0; }
+.card:hover { border-color: #dde3ec; }
+
+/* form text: quieter labels, clearer values */
+.sheet-section .field label, .status-bar label, #interview-info label {
+  font-size: .78rem; text-transform: uppercase; letter-spacing: .045em; color: var(--muted); font-weight: 700;
+}
+.status-bar label { font-size: .8rem; }
+.sheet-section .field .input, .status-bar select { color: var(--ink); }
+.sheet-section .help { color: #7b8698; }
+.sheet-hero__name { letter-spacing: -.015em; }
+.info-grid dd, .os-fact strong { color: var(--ink); }
+
+/* the key numbers read as a row of results, each with its own accent */
+.kpi:nth-child(1) { border-top-color: var(--primary); }
+.kpi:nth-child(2) { border-top-color: #94a3b8; }
+.kpi:nth-child(3) { border-top-color: var(--success); }
+.kpi__value { letter-spacing: -.02em; }
+.kpi:nth-child(1) .kpi__value { color: var(--primary); }
+.kpi:nth-child(3) .kpi__value { color: var(--success); }
+.kpi--accent .kpi__value { color: var(--primary-dark); }
+
+/* tables on the sheet */
+.eval-grid tbody tr:hover > * { background: var(--primary-soft); }
+.eval-grid td { color: var(--ink); }
+.avg-pill { box-shadow: 0 1px 2px rgba(29, 78, 216, .12); }
+
+/* ---------- references on the registration page ---------- */
+.ref-block { margin: 1.1rem 0 .5rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.ref-block__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: .7rem; }
+.ref-block__head h3 { margin: 0 0 .15rem; font-size: 1rem; }
+.ref-block__head p { margin: 0; font-size: .85rem; }
+.ref-row {
+  position: relative; border: 1px solid var(--line); border-left: 3px solid var(--primary-line);
+  border-radius: 10px; padding: .5rem .9rem .2rem; margin: 0 0 .6rem; background: var(--head);
+}
+.ref-row label { white-space: normal; overflow-wrap: anywhere; }
+.ref-row legend { float: none; }
+.ref-row__no { font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 0 .35rem; }
+.ref-remove {
+  position: absolute; top: .3rem; right: .5rem; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--red-line); background: #fff; color: var(--red); font-size: 1.1rem; line-height: 1;
+  cursor: pointer; font-weight: 700;
+}
+.ref-remove:hover { background: var(--red-soft); }
+.ref-remove[hidden] { display: none !important; }
+#ref-add[disabled] { opacity: .5; cursor: not-allowed; }
+@media (max-width: 560px) { .ref-row .grid-2 { grid-template-columns: 1fr; } }
+
+/* references popup on the candidate sheet */
+.ref-card { border: 1px solid var(--line); border-radius: 10px; padding: .7rem .9rem; margin-bottom: .6rem; background: var(--head); }
+.ref-card header { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; }
+.ref-card .reg-details { margin: 0; gap: .2rem .9rem; }

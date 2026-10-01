@@ -57,6 +57,7 @@ urlpatterns = [
     path("evaluations/", iv.evaluation_list, name="evaluation_list"),
     path("evaluations/data/", iv.evaluation_data, name="evaluation_data"),
     path("evaluations/<int:pk>/", iv.candidate_sheet, name="evaluation_detail"),
+    path("evaluations/<int:pk>/summary/", iv.candidate_summary, name="candidate_summary"),
     # candidates
     path("candidates/", v.candidate_list, name="candidate_list"),
     path("candidates/data/", v.candidate_data, name="candidate_data"),

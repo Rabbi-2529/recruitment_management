@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.utils.dateformat import format as date_format
 
-from .forms import ExamAnswerForm, ExamIdentifyForm, PublicSearchForm, RegistrationForm
+from .forms import ExamAnswerForm, ExamIdentifyForm, PublicSearchForm, ReferenceFormSet, RegistrationForm
 from .models import Answer, Candidate, Circular, Exam, ExamAttempt, SubmitReason
 from .utils import normalize_phone
 
@@ -49,13 +49,18 @@ def interview_text(circular):
 
 def register(request):
     form = RegistrationForm(request.POST or None, request.FILES or None)
+    posted_references = "ref-TOTAL_FORMS" in request.POST
+    references = ReferenceFormSet(request.POST if posted_references else None, prefix="ref")
 
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and form.is_valid() and (not posted_references or references.is_valid()):
         candidate = form.save(commit=False)
         candidate.source = Candidate.Source.ONLINE
         candidate.status = Candidate.Status.PENDING
         try:
-            candidate.save()
+            with transaction.atomic():
+                candidate.save()
+                if posted_references:
+                    references.save_for(candidate)
         except IntegrityError:  # same phone submitted twice at the same moment
             form.add_error("phone", "This phone number is already registered for this department.")
         else:
@@ -72,6 +77,7 @@ def register(request):
         "public/register.html",
         {
             "form": form,
+            "references": references,
             "has_open_circulars": bool(mapping),
             "circular_departments": mapping,
             "circular_interviews": interviews,

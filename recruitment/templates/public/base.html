@@ -6,7 +6,7 @@
   <title>{% block title %}IGL Careers{% endblock %} | IGL</title>
 {% include "_head_meta.html" %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v={{ ASSET_V }}">
 </head>
 <body class="public">
   <header>
@@ -25,10 +25,10 @@
   </main>
 
   <footer>&copy; {% now "Y" %} IGL · HR: {{ HR_PHONE }} · {{ HR_EMAIL }}</footer>
-  <script src="{% static 'js/bd_phone.js' %}"></script>
+  <script src="{% static 'js/bd_phone.js' %}?v={{ ASSET_V }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="{% static 'js/panel_forms.js' %}"></script>
+  <script src="{% static 'js/panel_forms.js' %}?v={{ ASSET_V }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

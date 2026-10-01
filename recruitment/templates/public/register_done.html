@@ -18,20 +18,35 @@
     {% if candidate.cv %}<dt>CV</dt><dd>📄 {{ candidate.cv_filename }} <span class="muted">(received)</span></dd>{% endif %}
   </dl>
 
-  <div class="interview-box">
-    <span class="interview-box__icon" aria-hidden="true">📅</span>
-    <div>
-      <div class="interview-box__label">Interview Date</div>
-      {% if candidate.circular.interview_date %}
-        <div class="interview-box__when">{{ candidate.circular.interview_date|date:"l, d M Y" }}</div>
-        <div class="interview-box__note">Your time slot will be informed by HR.</div>
-      {% else %}
-        <div class="interview-box__when muted">Will be announced soon</div>
-      {% endif %}
-    </div>
-  </div>
+  <!--<div class="interview-box">-->
+  <!--  <span class="interview-box__icon" aria-hidden="true">📅</span>-->
+  <!--  <div>-->
+  <!--    <div class="interview-box__label">Interview Date</div>-->
+  <!--    {% if candidate.circular.interview_date %}-->
+  <!--      <div class="interview-box__when">{{ candidate.circular.interview_date|date:"l, d M Y" }}</div>-->
+  <!--      <div class="interview-box__note">Your time slot will be informed by HR.</div>-->
+  <!--    {% else %}-->
+  <!--      <div class="interview-box__when muted">Will be announced soon</div>-->
+  <!--    {% endif %}-->
+  <!--  </div>-->
+  <!--</div>-->
 
   <p>Use your phone number and department on the <a href="{% url 'public:landing' %}">Check Result</a> page to see your interview date and result later.</p>
+
+  <!-- ✅ NEW: WhatsApp channel update notice -->
+  <div class="update-notice" style="margin: 1.5rem 0; padding: 1rem; background: #e8f5e9; border-left: 4px solid #25D366; border-radius: 6px;">
+    <p style="margin: 0 0 0.75rem 0; font-weight: 600; color: #075e54;">
+      📢 For next updates, follow our WhatsApp channel:
+    </p>
+    <a href="https://whatsapp.com/channel/0029VbC9Z4JKbYMUpmQpaJ01" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       class="btn btn-sm" 
+       style="background: #25D366; color: #fff; border: none; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600;">
+      <span style="font-size: 1.1rem;">📲</span> Join WhatsApp Channel
+    </a>
+  </div>
+
   <div class="contact">
     <a class="btn btn-sm" href="{% url 'public:landing' %}">Check Result</a>
     <a class="btn btn-sm btn-ghost" href="tel:{{ HR_PHONE }}">📞 {{ HR_PHONE }}</a>

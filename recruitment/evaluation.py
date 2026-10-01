@@ -100,6 +100,9 @@ def _avg(values):
 def summary(candidate):
     """Numbers for the Admin's view of one candidate."""
     evaluations = list(candidate.evaluations.select_related("interviewer").prefetch_related("scores"))
+    # the interviewers' sheets come first; the Admin's own sheet (and the one imported from the
+    # old Dress Up / Body Language / Viva marks) is shown last
+    evaluations.sort(key=lambda e: (e.interviewer.is_superuser, e.pk))
     submitted = [e for e in evaluations if e.is_submitted]
     return {
         "evaluations": evaluations,
