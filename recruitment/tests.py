@@ -217,10 +217,13 @@ class RegistrationTests(TestCase):
         done = self.client.get(reverse("public:register_done"))
         self.assertContains(done, "IGL-R-1-")
 
-    def test_cv_is_required_and_capped_at_1mb(self):
+    def test_cv_is_optional_but_still_capped_at_1mb(self):
         base = {"circular": self.circular.pk, "department": self.dev.pk, "name": "Arif", "phone": "01711000001"}
-        resp = self.client.post(self.url, base)
-        self.assertContains(resp, "This field is required")
+        resp = self.client.post(self.url, base)  # registering without a CV is allowed
+        self.assertRedirects(resp, reverse("public:register_done"))
+        self.assertFalse(Candidate.objects.get(phone="01711000001").cv)
+        Candidate.objects.all().delete()
+
         resp = self.client.post(self.url, {**base, "cv": cv_file("big.pdf", 1024 * 1024 + 1)})
         self.assertContains(resp, "must not be larger than")
         resp = self.client.post(self.url, {**base, "cv": cv_file("photo.png")})

@@ -159,8 +159,8 @@ class RegistrationForm(StyledFormMixin, forms.ModelForm):
 
     website = forms.CharField(required=False, widget=forms.TextInput(attrs={"autocomplete": "off", "tabindex": "-1"}))
 
-    # Set required=False here if CVs should be optional for candidates.
-    cv = CvField(required=True)
+    # Optional for candidates: set required=True here to make a CV compulsory again.
+    cv = CvField(required=False, label="Upload CV (optional)")
 
     class Meta:
         model = Candidate
